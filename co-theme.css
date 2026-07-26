@@ -4646,11 +4646,14 @@ body .co-home-hero::before {
 }
 
 body .co-home-hero::after {
-  opacity: 0 !important;
+  content: none !important;
+  display: none !important;
+  background: none !important;
+  border: 0 !important;
 }
 
 body .co-home-hero .rcc-cinematic-slides img {
-  filter: contrast(1.04) brightness(.92) !important;
+  filter: none !important;
 }
 
 @media (max-width: 1120px) {
