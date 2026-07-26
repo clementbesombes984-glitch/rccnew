@@ -4477,3 +4477,64 @@ body main > .page-title-banner + * {
     padding-top: 18px !important;
   }
 }
+
+@layer legacy-theme {
+/* Correctifs strictement localises : Galerie et typographie des coordonnees. */
+body .gallery-page .section-head h2 {
+  color: var(--co-white) !important;
+}
+
+body .gallery-page .section-kicker {
+  color: var(--co-red) !important;
+}
+
+body .gallery-page .gallery-filters button {
+  border-color: var(--co-line) !important;
+  background: var(--co-navy) !important;
+  color: var(--co-white) !important;
+}
+
+body .gallery-page .gallery-filters button:hover,
+body .gallery-page .gallery-filters button.is-active {
+  border-color: var(--co-burgundy) !important;
+  background: var(--co-burgundy) !important;
+  color: var(--co-white) !important;
+}
+
+body .gallery-page .gallery-cover span {
+  color: var(--co-red) !important;
+}
+
+body .gallery-page .gallery-cover strong,
+body .gallery-page .gallery-info h3 {
+  color: var(--co-white) !important;
+}
+
+body .gallery-page .gallery-info span,
+body .gallery-page .gallery-info p {
+  color: var(--co-muted) !important;
+}
+
+body .join-contact-page .contact-panel .contact-details span,
+body .join-contact-page .contact-panel .contact-details strong,
+body .join-contact-page .contact-panel .contact-details strong a,
+body .join-contact-page .contact-panel .contact-details p {
+  font-family: var(--co-font-text) !important;
+  font-style: normal;
+}
+
+body .join-contact-page .contact-panel .contact-details span {
+  font-weight: 600 !important;
+}
+
+body .join-contact-page .contact-panel .contact-details strong,
+body .join-contact-page .contact-panel .contact-details strong a {
+  font-weight: 600 !important;
+  letter-spacing: 0;
+  text-transform: none !important;
+}
+
+body .join-contact-page .contact-panel .contact-details p {
+  font-weight: 400;
+}
+}
