@@ -1191,11 +1191,14 @@ body :is(.staff-card, .notification-status-card, .president-card, .bureau-card, 
 /* Traitement photo "duotone" bordeaux/marine -- signature graphique qui remplace
    les photos en couleur naturelle par un rendu tres marque, desature et vire vers
    le bordeaux. Revele progressivement sa couleur naturelle au survol. */
-body :is(.news-image, .gallery-cover, .shop-card img, .player-photo img, .team-gallery-item, .co-hero-media img) {
+body .news-image {
+  filter: none;
+  transition: transform 650ms var(--co-ease-out);
+}
+body :is(.gallery-cover, .shop-card img, .player-photo img, .team-gallery-item, .co-hero-media img) {
   filter: grayscale(78%) sepia(22%) hue-rotate(300deg) saturate(2.1) contrast(1.08) brightness(.92);
   transition: transform 650ms var(--co-ease-out), filter 650ms ease;
 }
-body .news-grid article:hover .news-image,
 body .gallery-album:hover .gallery-cover,
 body .shop-card:hover img,
 body .player-card:hover .player-photo img,
