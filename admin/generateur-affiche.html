@@ -1,0 +1,752 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="icon" type="image/png" href="../assets/favicon.png" />
+    <title>Studio RCC - RC Cubzaguais</title>
+    <meta name="description" content="Studio RCC : centre de communication officiel du RC Cubzaguais." />
+    <link rel="stylesheet" href="../styles.css?v=studio-v3-tabs-1" />
+    <meta name="theme-color" content="#b11845" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="RCC" />
+    <link rel="manifest" href="../manifest.webmanifest" />
+    <link rel="apple-touch-icon" href="../assets/pwa-icon-192.png" />
+  </head>
+  <body class="poster-admin-page poster-locked studio-page">
+    <section class="poster-lock" data-poster-lock>
+      <form class="poster-lock-box" data-poster-lock-form>
+        <img src="../assets/logo-rcc.png" alt="RC Cubzaguais" />
+        <span>Acces communication</span>
+        <h1>Studio RCC</h1>
+        <p>Entrez le mot de passe du club pour creer les communications officielles du RCC.</p>
+        <label>Mot de passe
+          <input type="password" name="password" autocomplete="current-password" required autofocus />
+        </label>
+        <button class="button primary" type="submit">Entrer</button>
+        <p class="poster-lock-error" data-poster-lock-error hidden>Mot de passe incorrect.</p>
+        <a href="/cms-login">Retour administration</a>
+      </form>
+    </section>
+
+    <main class="studio-shell" data-poster-admin>
+      <header class="studio-topbar">
+        <a class="poster-admin-brand" href="../index.html">
+          <img src="../assets/logo-rcc.png" alt="RC Cubzaguais" />
+          <span>Studio RCC</span>
+        </a>
+        <div class="studio-topbar-title">
+          <h1>Studio RCC</h1>
+          <strong class="studio-current-module" data-studio-current-module>Publications</strong>
+          <span class="studio-doc-status" data-studio-document-status>Brouillon</span>
+        </div>
+        <div class="studio-topbar-actions">
+          <button class="button ghost" type="button" data-studio-save>Enregistrer</button>
+          <button class="button primary" type="button" data-publish-dialog-open>Publier</button>
+          <a class="button ghost" href="/cms-login">Administration</a>
+          <a class="button ghost" href="../index.html">Retour au site</a>
+        </div>
+        <details class="studio-mobile-actions">
+          <summary aria-label="Actions Studio">⋮</summary>
+          <div>
+            <button class="button ghost" type="button" data-studio-save>Enregistrer</button>
+            <button class="button primary" type="button" data-publish-dialog-open>Publier</button>
+            <a class="button ghost" href="/cms-login">Administration</a>
+            <a class="button ghost" href="../index.html">Retour au site</a>
+          </div>
+        </details>
+      </header>
+
+      <nav class="studio-tabs studio-main-modules" aria-label="Modules Studio RCC" role="tablist">
+        <button class="is-active" id="studio-tab-publications" type="button" role="tab" aria-selected="true" aria-controls="studio-panel-publications" data-studio-tab="publications">Publications</button>
+        <button id="studio-tab-composition" type="button" role="tab" aria-selected="false" aria-controls="studio-panel-composition" data-studio-tab="composition">Composition d'équipe</button>
+        <button id="studio-tab-newsletter" type="button" role="tab" aria-selected="false" aria-controls="studio-panel-newsletter" data-studio-tab="newsletter">Newsletter</button>
+      </nav>
+
+      <section class="studio-layout studio-tab-panel is-active" id="studio-panel-publications" role="tabpanel" aria-labelledby="studio-tab-publications" aria-hidden="false" data-studio-tab-panel="publications">
+        <aside class="studio-sidebar studio-left">
+          <div class="poster-panel-head">
+            <span>Modèle</span>
+            <strong>Affiche</strong>
+          </div>
+          <label class="studio-compact-select">Type d'affiche
+            <select data-compact-template>
+              <option value="upcoming">Match</option>
+              <option value="news">Actualite</option>
+              <option value="club">Evenement</option>
+            </select>
+          </label>
+          <div class="poster-panel-head compact">
+            <span>Source</span>
+            <strong>CMS</strong>
+          </div>
+          <label class="studio-compact-select">Source
+            <select data-compact-source>
+              <option value="blank">Nouvelle affiche</option>
+              <option value="news">Actualite existante</option>
+              <option value="event">Calendrier</option>
+            </select>
+          </label>
+          <label class="studio-source-select">Element a charger
+            <select data-source-select>
+              <option value="">Choisir une source</option>
+            </select>
+          </label>
+
+          <div class="poster-panel-head compact">
+            <span>Rendu</span>
+            <strong>Style et format</strong>
+          </div>
+          <label class="studio-compact-select">Style graphique
+            <select data-direct-style>
+              <option value="match">Top 14</option>
+              <option value="magazine">Magazine</option>
+              <option value="club">Vie du club</option>
+            </select>
+          </label>
+          <label class="studio-compact-select">Format
+            <select data-direct-format>
+              <option value="portrait">Instagram portrait</option>
+              <option value="facebook">Facebook paysage</option>
+              <option value="story">Story</option>
+              <option value="a4">Impression A4</option>
+              <option value="a3">Impression A3</option>
+            </select>
+          </label>
+
+          <p class="poster-help" data-poster-status role="status" aria-live="polite">Chargement du Studio RCC...</p>
+        </aside>
+
+        <section class="studio-preview-panel">
+          <div class="poster-preview-toolbar">
+            <span>Apercu en direct</span>
+            <strong data-poster-size>1080 x 1080</strong>
+            <button class="studio-settings-toggle" type="button" data-studio-settings-toggle aria-expanded="false">Reglages</button>
+          </div>
+          <div class="studio-preview-tools studio-document-tools" aria-label="Affichage du document">
+            <span>Document</span>
+            <button type="button" data-document-fit class="is-active">Adapter</button>
+            <button type="button" data-document-zoom-out aria-label="Reduire le zoom du document">Zoom document -</button>
+            <button type="button" data-document-zoom-in aria-label="Agrandir le zoom du document">Zoom document +</button>
+            <output data-document-zoom-label>Adapter</output>
+          </div>
+          <div class="studio-preview-tools studio-photo-tools" aria-label="Photo de fond">
+            <span>Photo de fond</span>
+            <label class="studio-tool-upload">Photo<input type="file" accept="image/*" data-direct-poster-image /></label>
+            <button type="button" data-zoom-out aria-label="Reduire le zoom de la photo">Zoom photo -</button>
+            <button type="button" data-zoom-in aria-label="Agrandir le zoom de la photo">Zoom photo +</button>
+            <button type="button" data-toggle-grid aria-label="Afficher ou masquer la grille de composition">Grille</button>
+            <button type="button" data-reset-photo aria-label="Recentrer la photo principale">Recentrer photo</button>
+            <button type="button" data-remove-photo aria-label="Supprimer la photo principale">Supprimer photo</button>
+          </div>
+          <div class="poster-canvas-wrap studio-canvas-wrap">
+            <div class="poster-stage" data-poster-stage>
+              <canvas id="posterCanvas" width="1080" height="1080" aria-label="Apercu de la communication RCC"></canvas>
+              <div class="poster-direct-layer" data-poster-direct-layer aria-label="Textes modifiables de l'affiche">
+                <button type="button" data-direct-field="category">Club</button>
+                <button type="button" data-direct-field="title">Reprise de la preparation</button>
+                <button type="button" data-direct-field="subtitle">Le RCC retrouve le terrain</button>
+                <button type="button" data-direct-field="date">Date</button>
+                <button type="button" data-direct-field="time">Heure</button>
+                <button type="button" data-direct-field="location">Lieu</button>
+                <button type="button" data-direct-field="opponent">Adversaire</button>
+                <button type="button" data-direct-field="score">Score</button>
+                <button type="button" data-direct-field="summary">Informations</button>
+              </div>
+            </div>
+          </div>
+          <div class="poster-context-toolbar" data-poster-context-toolbar hidden>
+            <strong data-context-label>Texte</strong>
+            <label>Taille <input type="range" min="70" max="135" value="100" data-context-size /></label>
+            <button type="button" data-context-align>Aligner</button>
+            <button type="button" data-context-hide>Masquer</button>
+            <button type="button" data-context-reset>Reinitialiser</button>
+          </div>
+          <div class="poster-actions studio-direct-actions">
+            <button class="button ghost" type="button" data-download-poster>PNG</button>
+            <button class="button ghost" type="button" data-download-pdf>PDF</button>
+            <button class="button primary" type="button" data-publish-dialog-open>Publier</button>
+          </div>
+        </section>
+
+        <form class="studio-sidebar studio-right poster-form studio-state-form" data-poster-form hidden>
+          <div class="poster-panel-head">
+            <span>Etape 3</span>
+            <strong>Ajuster l'affiche</strong>
+          </div>
+
+          <label>Format
+            <select name="format" data-poster-input>
+              <option value="portrait">Instagram portrait - 1080x1350</option>
+              <option value="facebook">Facebook paysage - 1200x630</option>
+              <option value="story">Story - 1080x1920</option>
+              <option value="a4">Impression A4</option>
+              <option value="a3">Impression A3</option>
+            </select>
+          </label>
+
+          <div class="poster-field-grid">
+            <label>Type
+              <select name="template" data-poster-input>
+                <option value="upcoming">Match</option>
+                <option value="news">Actualite</option>
+                <option value="club">Evenement</option>
+              </select>
+            </label>
+            <label>Style
+              <select name="style" data-poster-input>
+                <option value="match">Top 14</option>
+                <option value="magazine">Magazine</option>
+                <option value="club">Vie du club</option>
+              </select>
+            </label>
+          </div>
+
+          <div class="poster-panel-head compact">
+            <span>Contenu</span>
+            <strong>Texte principal</strong>
+          </div>
+          <label>Titre
+            <input name="title" type="text" value="Reprise de la preparation" maxlength="80" required placeholder="Ex. Match de rugby, Tournoi U10, Rejoins le RCC" data-poster-input />
+          </label>
+          <label>Sous-titre
+            <input name="subtitle" type="text" value="Le RCC retrouve le terrain" maxlength="90" placeholder="Ex. Ensemble au stade samedi" data-poster-input />
+          </label>
+          <label>Resume
+            <textarea name="summary" rows="3" maxlength="220" placeholder="Phrase courte pour expliquer l'information." data-poster-input>Ensemble, vivons notre passion aux couleurs du RCC.</textarea>
+          </label>
+
+          <div class="poster-panel-head compact">
+            <span>Infos</span>
+            <strong>Badges</strong>
+          </div>
+          <div class="poster-field-grid poster-field-grid-three">
+            <label>Date
+              <input name="date" type="text" value="" placeholder="Ex. 18 mai 2026" data-poster-input />
+            </label>
+            <label>Heure
+              <input name="time" type="text" value="" placeholder="Ex. 15h00" data-poster-input />
+            </label>
+            <label>Score
+              <input name="score" type="text" value="" placeholder="Ex. 28-14" data-poster-input />
+            </label>
+          </div>
+
+          <label>Lieu
+            <input name="location" type="text" value="Plaine des Sports Laurent Ricci" placeholder="Ex. Plaine des Sports Laurent Ricci" data-poster-input />
+          </label>
+          <div class="poster-field-grid">
+            <label>Categorie / competition
+              <input name="category" type="text" value="Club" placeholder="Ex. Seniors, U14, Championnat" data-poster-input />
+            </label>
+            <label>Adversaire / partenaire
+              <input name="opponent" type="text" value="" placeholder="Ex. US Bordeaux" data-poster-input />
+            </label>
+          </div>
+
+          <div class="poster-panel-head compact">
+            <span>Image</span>
+            <strong>Photos et logos</strong>
+          </div>
+          <label>Photo principale
+            <input name="image" type="file" accept="image/*" data-poster-image />
+          </label>
+          <label>Logo adverse / partenaire
+            <input name="opponentLogo" type="file" accept="image/*" data-opponent-logo />
+          </label>
+
+          <div class="poster-panel-head compact">
+            <span>Style</span>
+            <strong>Composition</strong>
+          </div>
+          <div class="poster-field-grid">
+            <label>Couleur
+              <select name="colorMode" data-poster-input>
+                <option value="red">Bordeaux RCC</option>
+                <option value="blue">Bleu marine</option>
+                <option value="dark">Noir premium</option>
+              </select>
+            </label>
+            <label>Position du texte
+              <select name="textPosition" data-poster-input>
+                <option value="left">Gauche</option>
+                <option value="center">Centre</option>
+                <option value="bottom">Bas</option>
+              </select>
+            </label>
+          </div>
+
+          <div class="poster-field-grid poster-field-grid-three">
+            <label>Titre
+              <input name="textScale" type="range" min="82" max="122" value="100" data-poster-input />
+              <span class="poster-range-help">Taille du titre</span>
+            </label>
+            <label>Overlay
+              <input name="overlay" type="range" min="45" max="82" value="65" data-poster-input />
+              <span class="poster-range-help">Photo plus sombre</span>
+            </label>
+            <label>Photo
+              <input name="photoZoom" type="range" min="100" max="170" value="112" data-poster-input />
+              <span class="poster-range-help">Recadrage</span>
+            </label>
+          </div>
+
+          <div class="poster-field-grid">
+            <label>Decalage horizontal
+              <input name="photoOffsetX" type="range" min="-35" max="35" value="0" data-poster-input />
+            </label>
+            <label>Decalage vertical
+              <input name="photoOffsetY" type="range" min="-35" max="35" value="0" data-poster-input />
+            </label>
+          </div>
+
+          <label class="poster-check">
+            <input name="showBadges" type="checkbox" value="yes" checked data-poster-input />
+            Afficher les badges
+          </label>
+          <label class="poster-check">
+            <input name="showQr" type="checkbox" value="yes" data-poster-input />
+            Afficher le QR code
+          </label>
+
+          <div class="poster-panel-head compact">
+            <span>Diffusion</span>
+            <strong>Canaux</strong>
+          </div>
+          <div class="studio-distribution" data-distribution-options>
+            <label class="poster-check">
+              <input name="publishSite" type="checkbox" value="yes" checked data-poster-input />
+              Publier sur le site
+            </label>
+            <label class="poster-check">
+              <input name="publishFacebook" type="checkbox" value="yes" data-poster-input />
+              Publier sur Facebook
+            </label>
+            <label class="poster-check">
+              <input name="publishInstagram" type="checkbox" value="yes" data-poster-input />
+              Publier sur Instagram
+            </label>
+            <label class="poster-check">
+              <input name="publishPush" type="checkbox" value="yes" data-poster-input />
+              Envoyer une notification Push
+            </label>
+          </div>
+          <div class="studio-push-settings" data-push-settings hidden>
+            <div class="poster-panel-head compact">
+              <span>Notification Push</span>
+              <strong>Reglages</strong>
+            </div>
+            <label>Titre de la notification
+              <input name="pushTitle" type="text" maxlength="48" placeholder="Titre court" data-poster-input />
+            </label>
+            <label>Message court
+              <textarea name="pushBody" rows="2" maxlength="140" placeholder="Message court affiche sur le telephone" data-poster-input></textarea>
+            </label>
+            <div class="poster-field-grid">
+              <label>Categorie ciblee
+                <select name="pushAudience" data-poster-input>
+                  <option value="actualites">Actualités</option>
+                  <option value="seniors">Seniors</option>
+                  <option value="cadettes">Cadettes</option>
+                  <option value="u19">U19</option>
+                  <option value="u16">U16</option>
+                  <option value="u14">U14</option>
+                  <option value="u12">U12</option>
+                  <option value="u10">U10</option>
+                  <option value="u8">U8</option>
+                  <option value="u6">U6</option>
+                </select>
+              </label>
+              <label>Importance
+                <select name="pushImportance" data-poster-input>
+                  <option value="normal">Normale</option>
+                  <option value="important">Importante</option>
+                </select>
+              </label>
+            </div>
+            <label>Lien de destination
+              <input name="pushUrl" type="text" value="/actualites.html" placeholder="/actualites.html" data-poster-input />
+            </label>
+            <label>Envoi
+              <select name="pushMode" data-poster-input>
+                <option value="now">Envoyer maintenant</option>
+                <option value="draft">Preparer seulement</option>
+              </select>
+            </label>
+          </div>
+          <p class="poster-help studio-publish-help">
+            Pour activer la publication sur le site, ajoute la variable <code>RCC_GITHUB_TOKEN</code> dans
+            Cloudflare Pages &gt; Settings &gt; Environment variables.
+          </p>
+
+          <div class="poster-panel-head compact">
+            <span>Apercus</span>
+            <strong>Avant diffusion</strong>
+          </div>
+          <div class="studio-channel-previews" data-channel-previews>
+            <article>
+              <span>Site</span>
+              <p data-preview-site>Le resume de la publication apparaitra ici.</p>
+            </article>
+            <article>
+              <span>Facebook</span>
+              <p data-preview-facebook>Le texte Facebook sera genere automatiquement.</p>
+            </article>
+            <article>
+              <span>Instagram</span>
+              <p data-preview-instagram>Le texte Instagram et les hashtags seront prepares ici.</p>
+            </article>
+            <article>
+              <span>Notification</span>
+              <p data-preview-push>Le titre court et le message push seront affiches ici.</p>
+            </article>
+          </div>
+
+          <label>Texte de publication
+            <textarea class="studio-caption" rows="5" data-caption-output></textarea>
+          </label>
+          <textarea class="studio-hashtags" rows="3" data-hashtag-output readonly></textarea>
+
+          <div class="poster-panel-head compact">
+            <span>Actions</span>
+            <strong>Export et publication</strong>
+          </div>
+          <div class="poster-actions studio-actions">
+            <button class="button primary" type="button" data-studio-save>Enregistrer</button>
+            <button class="button ghost" type="button" data-download-poster>PNG</button>
+            <button class="button ghost" type="button" data-download-pdf>PDF</button>
+            <details class="studio-copy-menu">
+              <summary class="button ghost">Copier</summary>
+              <div>
+                <button class="button ghost" type="button" data-copy-caption>Texte</button>
+                <button class="button ghost" type="button" data-copy-facebook>Facebook</button>
+                <button class="button ghost" type="button" data-copy-instagram>Instagram</button>
+                <button class="button ghost" type="button" data-copy-hashtags>Hashtags</button>
+              </div>
+            </details>
+            <button class="button primary" type="button" data-publish-dialog-open>Publier</button>
+            <button class="button primary studio-real-publish" type="button" data-publish-studio hidden>Publier maintenant</button>
+            <button class="button ghost" type="button" data-prepare-distribution>Preparer diffusion</button>
+            <button class="button ghost" type="button" data-check-meta>Verifier Meta</button>
+          </div>
+        </form>
+      </section>
+
+      <section class="studio-tab-panel studio-tool-panel" id="studio-panel-composition" role="tabpanel" aria-labelledby="studio-tab-composition" aria-hidden="true" data-studio-tab-panel="composition" hidden>
+        <div class="composition-workflow" data-composition-workflow>
+          <nav class="composition-steps" aria-label="Etapes composition">
+            <button class="is-active" type="button" data-composition-step="match"><span>1.</span> Match</button>
+            <button type="button" data-composition-step="preview"><span>2.</span> Composition</button>
+            <button type="button" data-composition-step="publish"><span>3.</span> Publication</button>
+          </nav>
+
+          <section class="composition-step-panel is-active" data-composition-step-panel="match">
+            <aside class="studio-sidebar composition-card-panel">
+            <div class="poster-panel-head">
+              <span>Composition</span>
+              <strong>Infos match</strong>
+            </div>
+            <label>Equipe
+              <select data-composition-team>
+                <option value="Seniors">Seniors</option>
+                <option value="U19">U19</option>
+                <option value="U16">U16</option>
+                <option value="Cadettes">Cadettes</option>
+              </select>
+            </label>
+            <label>Match existant
+              <select data-composition-match>
+                <option value="">Choisir un match</option>
+              </select>
+            </label>
+            <div class="studio-mini-card" data-composition-match-info>
+              Selectionne une equipe puis un match du calendrier.
+            </div>
+            <div class="poster-field-grid">
+              <label>Capitaine
+                <select data-composition-captain>
+                  <option value="">Choisir</option>
+                </select>
+              </label>
+              <label>Vice-capitaine
+                <select data-composition-vice>
+                  <option value="">Choisir</option>
+                </select>
+              </label>
+            </div>
+            <label>Coach / responsable
+              <input data-composition-coach type="text" placeholder="Nom du coach" />
+            </label>
+            <label>Commentaires
+              <textarea data-composition-comments rows="2" placeholder="Consignes, infos de groupe, rendez-vous..."></textarea>
+            </label>
+            <div class="composition-step-actions">
+              <button class="button ghost" type="button" data-composition-load-last>Charger dernier brouillon</button>
+              <button class="button primary" type="button" data-composition-next>Suivant</button>
+            </div>
+            </aside>
+          </section>
+
+          <div data-composition-list hidden aria-hidden="true"></div>
+
+          <section class="composition-step-panel" data-composition-step-panel="preview" hidden>
+            <section class="studio-preview-panel composition-preview-panel">
+            <div class="poster-preview-toolbar">
+              <span>Apercu composition</span>
+              <strong>15 + banc</strong>
+            </div>
+            <div class="composition-preview" data-composition-preview></div>
+            <div class="composition-step-actions">
+              <button class="button ghost" type="button" data-composition-prev>Precedent</button>
+              <button class="button ghost" type="button" data-composition-export>PNG HD</button>
+              <button class="button primary" type="button" data-composition-next>Suivant</button>
+            </div>
+            </section>
+          </section>
+
+          <section class="composition-step-panel" data-composition-step-panel="publish" hidden>
+            <aside class="studio-sidebar composition-card-panel composition-publish-panel">
+              <div class="poster-panel-head">
+                <span>Publication</span>
+                <strong>Diffusion</strong>
+              </div>
+              <div class="studio-mini-card" data-composition-publish-summary></div>
+              <div class="studio-distribution composition-distribution">
+                <label class="poster-check"><input type="checkbox" data-composition-publish-site /> Site</label>
+                <label class="poster-check"><input type="checkbox" data-composition-publish-facebook /> Facebook</label>
+                <label class="poster-check"><input type="checkbox" data-composition-publish-instagram /> Instagram</label>
+                <label class="poster-check"><input type="checkbox" data-composition-publish-push /> Notification</label>
+              </div>
+              <div class="composition-history" data-composition-history></div>
+              <div class="poster-actions studio-actions composition-final-actions">
+                <button class="button primary" type="button" data-composition-save>Enregistrer</button>
+                <button class="button primary" type="button" data-composition-publish>Enregistrer côté serveur</button>
+                <details class="studio-more-actions">
+                  <summary>Plus</summary>
+                  <button class="button ghost" type="button" data-composition-export-story>Export Story</button>
+                  <button class="button ghost" type="button" data-composition-export-print>Export impression</button>
+                  <button class="button ghost" type="button" data-composition-copy-facebook>Copier Facebook</button>
+                  <button class="button ghost" type="button" data-composition-copy-instagram>Copier Instagram</button>
+                  <button class="button ghost" type="button" data-composition-duplicate>Dupliquer</button>
+                  <button class="button ghost" type="button" data-composition-clear>Vider</button>
+                </details>
+              </div>
+              <div class="composition-step-actions">
+                <button class="button ghost" type="button" data-composition-prev>Precedent</button>
+              </div>
+            </aside>
+          </section>
+        </div>
+      </section>
+
+      <section class="studio-tab-panel studio-tool-panel" id="studio-panel-newsletter" role="tabpanel" aria-labelledby="studio-tab-newsletter" aria-hidden="true" data-studio-tab-panel="newsletter" hidden>
+        <div class="newsletter-editor-v2" data-newsletter-v2>
+          <div class="newsletter-commandbar">
+            <label>Modèle
+              <select data-nl-template>
+                <option value="monthly">Mensuelle standard</option>
+                <option value="ag">Spéciale assemblée générale</option>
+                <option value="season">Rentrée du club</option>
+                <option value="event">Événement spécial</option>
+              </select>
+            </label>
+            <label>Brouillon
+              <select data-nl-draft-select><option value="">Nouveau document</option></select>
+            </label>
+            <button class="button ghost" type="button" data-nl-new>Nouveau</button>
+            <button class="button ghost" type="button" data-nl-save>Enregistrer</button>
+            <button class="button ghost" type="button" data-nl-duplicate>Dupliquer</button>
+            <button class="button ghost" type="button" data-nl-delete>Supprimer</button>
+            <span class="newsletter-save-state" data-nl-save-state>Brouillon non enregistré</span>
+          </div>
+
+          <div class="newsletter-workspace">
+            <aside class="newsletter-library" aria-label="Bibliothèque de blocs">
+              <div class="newsletter-panel-title"><strong>Blocs</strong><span>Ajouter à la page active</span></div>
+              <label>Rechercher
+                <input type="search" data-nl-block-search placeholder="Actualité, photo, calendrier..." />
+              </label>
+              <div class="newsletter-block-palette" data-nl-block-palette></div>
+              <details class="newsletter-source-panel" open>
+                <summary>Contenus du site</summary>
+                <label>Source
+                  <select data-nl-source-type>
+                    <option value="news">Actualités</option>
+                    <option value="matches">Calendrier</option>
+                    <option value="partners">Partenaires</option>
+                    <option value="gallery">Galerie</option>
+                  </select>
+                </label>
+                <div class="newsletter-source-results" data-nl-source-results><p>Chargement des contenus…</p></div>
+              </details>
+            </aside>
+
+            <section class="newsletter-canvas-panel">
+              <div class="newsletter-previewbar">
+                <div class="newsletter-page-tabs" role="tablist" aria-label="Pages de la newsletter">
+                  <button class="is-active" type="button" data-nl-page-view="1">Page 1</button>
+                  <button type="button" data-nl-page-view="2">Page 2</button>
+                  <button type="button" data-nl-page-view="both">Double page</button>
+                </div>
+                <div class="newsletter-zoom-tools">
+                  <button type="button" data-nl-zoom="out" aria-label="Réduire le zoom">−</button>
+                  <span data-nl-zoom-label>70 %</span>
+                  <button type="button" data-nl-zoom="in" aria-label="Augmenter le zoom">+</button>
+                </div>
+              </div>
+              <div class="newsletter-overflow-warning" data-nl-overflow hidden>Une page dépasse le format A4. Réduisez ou déplacez un bloc avant l’export.</div>
+              <div class="newsletter-context-toolbar" data-nl-context-toolbar hidden role="toolbar" aria-label="Mise en forme du texte">
+                <select data-nl-context-type aria-label="Type du bloc"></select>
+                <button type="button" data-nl-context-move="up">Monter</button>
+                <button type="button" data-nl-context-move="down">Descendre</button>
+                <button type="button" data-nl-context-clone>Dupliquer</button>
+                <button type="button" data-nl-context-remove>Supprimer</button>
+                <span data-nl-text-tools hidden>
+                  <select data-nl-font-size aria-label="Taille du texte">
+                    <option value="8">8 px</option><option value="10">10 px</option><option value="11">11 px</option>
+                    <option value="12">12 px</option><option value="14">14 px</option><option value="16">16 px</option>
+                    <option value="18">18 px</option><option value="21">21 px</option><option value="24">24 px</option>
+                    <option value="28">28 px</option><option value="32">32 px</option><option value="38">38 px</option>
+                  </select>
+                  <button type="button" data-nl-format="bold" aria-label="Gras"><b>G</b></button>
+                  <button type="button" data-nl-format="italic" aria-label="Italique"><i>I</i></button>
+                  <button type="button" data-nl-format="underline" aria-label="Souligné"><u>S</u></button>
+                  <button type="button" data-nl-align="left">Gauche</button>
+                  <button type="button" data-nl-align="center">Centré</button>
+                  <button type="button" data-nl-align="right">Droite</button>
+                  <select data-nl-text-color aria-label="Couleur du texte"><option value="">Auto</option><option value="#071a37">Bleu marine</option><option value="#b11845">Bordeaux</option><option value="#111111">Noir</option><option value="#ffffff">Blanc</option></select>
+                  <button type="button" data-nl-format="insertUnorderedList">Liste</button>
+                  <input type="url" data-nl-link-url placeholder="https://..." aria-label="Lien" />
+                  <button type="button" data-nl-apply-link>Ajouter le lien</button>
+                  <button type="button" data-nl-reset-text>Réinitialiser</button>
+                </span>
+              </div>
+              <div class="newsletter-spread" data-nl-spread></div>
+            </section>
+
+            <aside class="newsletter-properties" aria-label="Réglages de la newsletter" hidden aria-hidden="true">
+              <div class="newsletter-panel-title"><strong>Réglages</strong><span data-nl-selection-label>Document</span></div>
+              <div data-nl-document-properties>
+                <p class="newsletter-selection-help">Sélectionnez un bloc dans la page pour le modifier. Les réglages généraux restent disponibles ci-dessous.</p>
+                <label>Titre principal<input type="text" data-nl-header-field="title" /></label>
+                <label>Sous-titre<input type="text" data-nl-header-field="subtitle" /></label>
+                <div class="newsletter-field-row">
+                  <label>Numéro de l’édition<input type="text" data-nl-header-field="issueNumber" /></label>
+                  <label>Mois<input type="text" data-nl-header-field="month" /></label>
+                </div>
+                <div class="newsletter-field-row">
+                  <label>Année<input type="number" min="2020" max="2100" data-nl-header-field="year" /></label>
+                  <label>Saison<input type="text" data-nl-header-field="season" /></label>
+                </div>
+                <label>Slogan<input type="text" data-nl-header-field="tagline" /></label>
+                <label>Description<textarea rows="3" data-nl-meta="description"></textarea></label>
+                <label>Statut
+                  <select data-nl-meta="status"><option value="draft">Brouillon</option><option value="published">Publié</option><option value="archived">Archivé</option></select>
+                </label>
+              </div>
+              <div data-nl-block-properties hidden>
+                <div data-nl-header-block-properties hidden>
+                  <label>Titre principal<input type="text" data-nl-header-field="title" /></label>
+                  <label>Sous-titre<input type="text" data-nl-header-field="subtitle" /></label>
+                  <div class="newsletter-field-row">
+                    <label>Numéro de l’édition<input type="text" data-nl-header-field="issueNumber" /></label>
+                    <label>Mois<input type="text" data-nl-header-field="month" /></label>
+                  </div>
+                  <div class="newsletter-field-row">
+                    <label>Année<input type="number" min="2020" max="2100" data-nl-header-field="year" /></label>
+                    <label>Saison<input type="text" data-nl-header-field="season" /></label>
+                  </div>
+                  <label>Slogan<input type="text" data-nl-header-field="tagline" /></label>
+                </div>
+                <div data-nl-standard-block-properties>
+                  <label>Type<select data-nl-block-field="type"></select></label>
+                  <label>Libellé<input type="text" data-nl-block-field="label" /></label>
+                  <label>Titre<input type="text" data-nl-block-field="title" /></label>
+                  <label>Sous-titre<input type="text" data-nl-block-field="subtitle" /></label>
+                  <label>Texte<textarea rows="6" data-nl-block-field="text"></textarea></label>
+                  <label>Image<input type="file" accept="image/*" data-nl-image-file /></label>
+                  <label>Chemin image<input type="text" data-nl-block-field="image" placeholder="/assets/..." /></label>
+                  <label class="poster-check"><input type="checkbox" data-nl-block-field="hideImage" /> Masquer l’image</label>
+                  <div class="newsletter-field-row">
+                    <label>Taille<select data-nl-block-field="size"><option value="full">Pleine largeur</option><option value="two-thirds">Deux tiers</option><option value="half">Moitié</option><option value="third">Un tiers</option><option value="small">Petit</option></select></label>
+                    <label>Alignement<select data-nl-block-field="align"><option value="left">Gauche</option><option value="center">Centre</option><option value="right">Droite</option></select></label>
+                  </div>
+                  <label>Accent<select data-nl-block-field="accent"><option value="burgundy">Bordeaux</option><option value="navy">Bleu marine</option><option value="light">Clair</option></select></label>
+                  <label>Lien<input type="url" data-nl-block-field="link" placeholder="https://..." /></label>
+                  <label>Nombre de photos dans la galerie<input type="number" min="1" max="8" data-nl-block-field="photoCount" /></label>
+                </div>
+                <div class="newsletter-block-actions">
+                  <button type="button" data-nl-move="up">Monter</button><button type="button" data-nl-move="down">Descendre</button>
+                  <button type="button" data-nl-move-page>Changer de page</button><button type="button" data-nl-clone-block>Dupliquer</button>
+                  <button class="is-danger" type="button" data-nl-remove-block>Supprimer</button>
+                </div>
+              </div>
+            </aside>
+          </div>
+
+          <div class="newsletter-actionbar">
+            <button class="button ghost" type="button" data-nl-export-page>PNG page active</button>
+            <button class="button ghost" type="button" data-nl-export-cover>PNG couverture</button>
+            <button class="button primary" type="button" data-nl-export-pdf>PDF deux pages</button>
+            <button class="button primary" type="button" data-nl-publish>Publier et archiver</button>
+            <span data-nl-action-status aria-live="polite"></span>
+          </div>
+        </div>
+      </section>
+
+      <section class="studio-tab-panel studio-tool-panel" data-studio-tab-panel="history" hidden>
+        <div class="studio-simple-panel">
+          <div class="poster-panel-head">
+            <span>Historique</span>
+            <strong>Dernieres actions</strong>
+          </div>
+          <p class="poster-help">L'historique local des exports, publications et compositions reste disponible dans ce navigateur.</p>
+          <div class="publication-history-panel">
+            <a class="button ghost" href="./publications.html">Ouvrir l'historique complet</a>
+          </div>
+        </div>
+      </section>
+
+      <section class="studio-tab-panel studio-tool-panel" data-studio-tab-panel="settings" hidden>
+        <div class="studio-simple-panel">
+          <div class="poster-panel-head">
+            <span>Parametres</span>
+            <strong>Acces rapides</strong>
+          </div>
+          <p class="poster-help">Les reglages sensibles restent geres dans Cloudflare Pages et Pages CMS. Cette page garde uniquement les raccourcis utiles.</p>
+          <div class="poster-actions studio-actions">
+            <a class="button ghost" href="/cms-login">Pages CMS</a>
+            <a class="button ghost" href="../notifications.html">Notifications</a>
+            <a class="button ghost" href="../index.html">Retour au site</a>
+          </div>
+        </div>
+      </section>
+
+      <dialog class="studio-publish-dialog" data-publish-dialog>
+        <form method="dialog">
+          <div class="poster-panel-head">
+            <span>Publication</span>
+            <strong>Canaux</strong>
+          </div>
+          <p class="poster-help">Verifie les canaux coches dans la section Diffusion avant de publier.</p>
+          <div class="studio-distribution compact-dialog-options">
+            <span>Site</span>
+            <span>Facebook</span>
+            <span>Instagram</span>
+            <span>Notification push</span>
+          </div>
+          <div class="poster-actions studio-actions">
+            <button class="button ghost" value="cancel" type="button" data-publish-dialog-cancel>Annuler</button>
+            <button class="button primary" value="default" type="button" data-publish-dialog-confirm>Publier</button>
+          </div>
+        </form>
+      </dialog>
+    </main>
+
+    <script src="../notification-categories.js"></script>
+    <script src="./poster-auth.js?v=studio-v3-direct-2"></script>
+    <script src="../script.js"></script>
+    <script src="./poster-generator.js?v=studio-v3-tabs-1"></script>
+    <script src="./newsletter-editor.js?v=studio-v3-simple-2"></script>
+  </body>
+</html>

@@ -1,0 +1,5 @@
+name = "rcc-co-redesign"
+compatibility_date = "2026-07-03"
+compatibility_flags = ["nodejs_compat"]
+
+pages_build_output_dir = "."

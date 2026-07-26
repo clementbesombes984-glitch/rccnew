@@ -1,0 +1,32 @@
+{
+  "presidentMessage": {
+    "role": "Président"
+  },
+  "members": [
+    {
+      "firstName": "Pascal",
+      "lastName": "Clauzure",
+      "role": "Président"
+    },
+    {
+      "firstName": "Arnaud",
+      "lastName": "Lafourcade",
+      "role": "Vice-Président"
+    },
+    {
+      "firstName": "Michel",
+      "lastName": "Arnaud",
+      "role": "Vice-Président"
+    },
+    {
+      "firstName": "Clémentine",
+      "lastName": "Bouillard",
+      "role": "Trésorière"
+    },
+    {
+      "firstName": "Benjamin",
+      "lastName": "Garandeau",
+      "role": "Secrétaire Général"
+    }
+  ]
+}

@@ -1,0 +1,105 @@
+{
+  "categories": [
+    {
+      "age": "U6",
+      "label": "Premiers pas",
+      "summary": "Découverte du ballon, motricité, jeux collectifs et plaisir de venir au stade.",
+      "training": "Samedi 10h",
+      "staff": [
+        {
+          "firstName": "Jonathan",
+          "lastName": "Hugon",
+          "role": "Éducateur"
+        },
+        {
+          "firstName": "Aymeric ",
+          "lastName": "Rigaut",
+          "role": "Éducateur"
+        }
+      ]
+    },
+    {
+      "age": "U8",
+      "label": "Apprendre ensemble",
+      "summary": "Courses, passes, repères sur le terrain et premiers réflexes de soutien.",
+      "training": "Mercredi 18h · Samedi 10h",
+      "staff": [
+        {
+          "firstName": "Clément",
+          "lastName": "Besombes",
+          "role": "Éducateur",
+          "photo": "/assets/uploads/img20260708204618-1.jpg"
+        },
+        {
+          "firstName": "Mathieu",
+          "lastName": "Vallejo",
+          "role": "Éducateur",
+          "photo": "/assets/uploads/img20260708204804.jpg"
+        },
+        {
+          "firstName": "Lena",
+          "lastName": "Buceta",
+          "role": "Educatrice",
+          "photo": "/assets/uploads/chatgpt-image-9-juil-2026-171939-1.png"
+        }
+      ]
+    },
+    {
+      "age": "U10",
+      "label": "Construire le jeu",
+      "summary": "Technique individuelle, placement, contact maîtrisé et esprit d’équipe.",
+      "training": "Mercredi 18h · Samedi 10h"
+    },
+    {
+      "age": "U12",
+      "label": "Grandir en collectif",
+      "summary": "Lecture du jeu, organisation défensive, conservation et prise d’initiative.",
+      "training": "Mercredi 18h · Samedi 10h",
+      "staff": [
+        {
+          "firstName": "Cédric",
+          "lastName": "Ringuet"
+        },
+        {
+          "firstName": "Guillaume",
+          "lastName": "Houles"
+        }
+      ]
+    },
+    {
+      "age": "U14",
+      "label": "Entrer dans le grand terrain",
+      "summary": "Travail technique, premières organisations collectives complètes, attitude défensive et confiance dans le contact.",
+      "training": "Mardi 18h30 · Vendredi 18h30",
+      "staff": [
+        {
+          "firstName": "Stéphane",
+          "lastName": "Provost",
+          "role": "Éducateur ",
+          "photo": "/assets/uploads/img-20260710-wa0016.jpg"
+        },
+        {
+          "firstName": "Franck",
+          "lastName": "Paoletti",
+          "role": "Éducateur",
+          "photo": "/assets/uploads/img-20260711-wa0046-1.jpg"
+        },
+        {
+          "firstName": "Stéphane",
+          "lastName": "Mespoulède",
+          "role": "Éducateur"
+        },
+        {
+          "firstName": "Mathieu",
+          "lastName": "Sautron",
+          "role": "Educateur"
+        },
+        {
+          "firstName": "Evan",
+          "lastName": "Nguyen",
+          "role": "Educateur"
+        }
+      ]
+    }
+  ]
+}

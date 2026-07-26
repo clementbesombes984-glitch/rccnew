@@ -1,0 +1,32 @@
+{
+  "matches": [
+    {
+      "title": "Reprise Entraînement senior",
+      "type_evenement": "entrainement",
+      "team": "Seniors",
+      "date": "2026-08-04",
+      "time": "19h30",
+      "location": "Plaine des Sports Laurent Ricci",
+      "home": false,
+      "notification": false
+    },
+    {
+      "title": "Reprise entraînement EDR",
+      "type_evenement": "entrainement",
+      "team": "Ecole de rugby",
+      "teams": [
+        "Ecole de rugby",
+        "U6",
+        "U8",
+        "U10",
+        "U12",
+        "U14"
+      ],
+      "date": "2026-09-05",
+      "time": "10h00",
+      "location": "Plaine des Sports Laurent Ricci",
+      "home": false,
+      "notification": false
+    }
+  ]
+}

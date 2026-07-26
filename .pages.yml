@@ -1,0 +1,1485 @@
+media:
+  input: assets/uploads
+  output: /assets/uploads
+  rename: safe
+  categories: [image]
+
+content:
+  - name: news
+    label: Actualites
+    type: file
+    path: data/news.json
+    format: json
+    fields:
+      - name: news
+        label: Articles du club
+        type: object
+        list:
+          collapsible:
+            collapsed: true
+            summary: "{date} - {category} - {title}"
+        fields:
+          - name: id
+            label: Identifiant permanent
+            type: string
+            required: true
+            description: Identifiant unique conserve meme si le titre change (ex. staff-u8-2026-07-09-01).
+          - name: title
+            label: Titre
+            type: string
+            required: true
+          - name: summary
+            label: Resume
+            type: text
+          - name: body
+            label: Contenu complet
+            type: text
+          - name: image
+            label: Image
+            type: image
+          - name: category
+            label: Categorie
+            type: select
+            required: true
+            options:
+              values:
+                - Club
+                - Seniors
+                - Ecole de rugby
+                - Pole jeunes
+                - Cadettes
+                - Benevoles
+                - Partenaires
+                - Tournois
+                - Evenements
+          - name: audience
+            label: Public concerne
+            type: select
+            list: true
+            options:
+              values:
+                - value: general
+                  label: Tout le club
+                - value: seniors
+                  label: Seniors
+                - value: cadettes
+                  label: Cadettes
+                - value: u6
+                  label: U6
+                - value: u8
+                  label: U8
+                - value: u10
+                  label: U10
+                - value: u12
+                  label: U12
+                - value: u14
+                  label: U14
+                - value: u16
+                  label: U16
+                - value: u19
+                  label: U19
+                - value: ecole
+                  label: Ecole de rugby
+                - value: jeunes
+                  label: Pole jeunes
+                - value: benevoles
+                  label: Benevoles
+                - value: partenaires
+                  label: Partenaires
+                - value: evenements
+                  label: Evenements
+                - value: matchs
+                  label: Matchs
+                - value: tournois
+                  label: Tournois
+                - value: resultats
+                  label: Resultats
+                - value: entrainements
+                  label: Entrainements
+                - value: important
+                  label: Urgent / important
+          - name: important
+            label: Mettre en info importante
+            type: boolean
+          - name: notification
+            label: Envoyer une notification
+            type: boolean
+          - name: featured
+            label: Mettre a la une
+            type: boolean
+          - name: date
+            label: Date de publication
+            type: date
+
+  - name: matches
+    label: Calendrier
+    type: file
+    path: data/matches.json
+    format: json
+    fields:
+      - name: matches
+        label: Evenements du calendrier
+        type: object
+        list:
+          collapsible:
+            collapsed: true
+            summary: "{date} - {type_evenement} - {title}"
+        fields:
+          - name: title
+            label: Titre
+            type: string
+            required: true
+          - name: type_evenement
+            label: Type d'evenement
+            type: select
+            required: true
+            options:
+              values:
+                - value: match
+                  label: Match
+                - value: tournoi
+                  label: Tournoi
+                - value: entrainement
+                  label: Entrainement
+                - value: reunion
+                  label: Reunion
+                - value: evenement_club
+                  label: Evenement club
+          - name: team
+            label: Equipe principale
+            type: select
+            options:
+              values:
+                - Seniors
+                - Cadettes
+                - U6
+                - U8
+                - U10
+                - U12
+                - U14
+                - U16
+                - U19
+                - Ecole de rugby
+                - Pole jeunes
+                - Tout le club
+          - name: teams
+            label: Equipes concernees
+            type: select
+            list: true
+            options:
+              values:
+                - Seniors
+                - Cadettes
+                - U6
+                - U8
+                - U10
+                - U12
+                - U14
+                - U16
+                - U19
+                - Ecole de rugby
+                - Pole jeunes
+                - Tout le club
+          - name: date
+            label: Date
+            type: date
+            required: true
+          - name: time
+            label: Heure
+            type: string
+            required: true
+          - name: location
+            label: Lieu
+            type: string
+            required: true
+          - name: address
+            label: Adresse
+            type: string
+          - name: home
+            label: A domicile
+            type: boolean
+          - name: opponent
+            label: Adversaire si match
+            type: string
+          - name: tournamentName
+            label: Nom du tournoi si tournoi
+            type: string
+          - name: description
+            label: Description
+            type: text
+          - name: status
+            label: Statut
+            type: select
+            options:
+              values:
+                - value: upcoming
+                  label: A venir
+                - value: win
+                  label: Victoire
+                - value: loss
+                  label: Defaite
+                - value: muted
+                  label: Information
+          - name: result
+            label: Resultat
+            type: string
+          - name: category
+            label: Filtre principal
+            type: select
+            options:
+              values:
+                - value: seniors
+                  label: Seniors
+                - value: cadettes
+                  label: Cadettes
+                - value: u6
+                  label: U6
+                - value: u8
+                  label: U8
+                - value: u10
+                  label: U10
+                - value: u12
+                  label: U12
+                - value: u14
+                  label: U14
+                - value: u16
+                  label: U16
+                - value: u19
+                  label: U19
+                - value: ecole
+                  label: Ecole de rugby
+                - value: jeunes
+                  label: Pole jeunes
+                - value: general
+                  label: Tout le club
+          - name: notification
+            label: Envoyer une notification
+            type: boolean
+          - name: audience
+            label: Public concerne
+            type: select
+            list: true
+            options:
+              values:
+                - value: general
+                  label: Tout le club
+                - value: seniors
+                  label: Seniors
+                - value: cadettes
+                  label: Cadettes
+                - value: u6
+                  label: U6
+                - value: u8
+                  label: U8
+                - value: u10
+                  label: U10
+                - value: u12
+                  label: U12
+                - value: u14
+                  label: U14
+                - value: u16
+                  label: U16
+                - value: u19
+                  label: U19
+                - value: ecole
+                  label: Ecole de rugby
+                - value: jeunes
+                  label: Pole jeunes
+                - value: benevoles
+                  label: Benevoles
+                - value: partenaires
+                  label: Partenaires
+                - value: evenements
+                  label: Evenements
+                - value: matchs
+                  label: Matchs
+                - value: tournois
+                  label: Tournois
+                - value: resultats
+                  label: Resultats
+                - value: entrainements
+                  label: Entrainements
+                - value: important
+                  label: Urgent / important
+
+  - name: gallery
+    label: Galerie
+    type: file
+    path: data/gallery.json
+    format: json
+    fields:
+      - name: albums
+        label: Albums photo
+        type: object
+        list:
+          collapsible:
+            collapsed: true
+            summary: "{date} - {category} - {title}"
+        fields:
+          - name: title
+            label: Nom de l'album
+            type: string
+            required: true
+          - name: category
+            label: Rubrique
+            type: select
+            required: true
+            options:
+              values:
+                - Entrainements
+                - Matchs
+                - Ecole de rugby
+                - Benevoles
+                - Evenements
+                - Partenaires
+          - name: date
+            label: Date
+            type: date
+          - name: description
+            label: Description
+            type: text
+          - name: cover
+            label: Photo de couverture
+            type: image
+          - name: photos
+            label: Photos
+            type: object
+            list:
+              collapsible:
+                collapsed: true
+                summary: "{alt}"
+            fields:
+              - name: image
+                label: Photo
+                type: image
+              - name: alt
+                label: Description de la photo
+                type: string
+          - name: featured
+            label: Mettre en avant
+            type: boolean
+
+  - name: shop
+    label: Boutique
+    type: file
+    path: data/shop.json
+    format: json
+    fields:
+      - name: products
+        label: Produits
+        type: object
+        list:
+          collapsible:
+            collapsed: true
+            summary: "{category} - {name}"
+        fields:
+          - name: name
+            label: Nom produit
+            type: string
+            required: true
+          - name: category
+            label: Categorie
+            type: select
+            required: true
+            options:
+              values:
+                - Maillots
+                - Sweats
+                - Polos
+                - Shorts
+                - Accessoires
+          - name: image
+            label: Image
+            type: image
+          - name: price
+            label: Prix
+            type: string
+          - name: description
+            label: Description courte
+            type: text
+          - name: url
+            label: Lien Sponsport
+            type: string
+          - name: badge
+            label: Badge optionnel
+            type: select
+            options:
+              values:
+                - ""
+                - Nouveau
+                - Promo
+                - Precommande
+
+  - name: partners
+    label: Partenaires
+    type: file
+    path: data/partners.json
+    format: json
+    fields:
+      - name: intro
+        label: Texte d'introduction
+        type: text
+      - name: partners
+        label: Liste des partenaires
+        type: object
+        list:
+          collapsible:
+            collapsed: true
+            summary: "{name}"
+        fields:
+          - name: name
+            label: Nom du partenaire
+            type: string
+            required: true
+          - name: description
+            label: Description
+            type: text
+          - name: logo
+            label: Logo
+            type: image
+          - name: url
+            label: Site internet
+            type: string
+          - name: category
+            label: Groupe
+            type: string
+
+  - name: senior
+    label: Seniors
+    type: file
+    path: data/senior.json
+    format: json
+    fields:
+      - name: staff
+        label: Staff senior
+        type: object
+        list:
+          collapsible:
+            collapsed: true
+            summary: "{role} - {firstName} {lastName}"
+        fields:
+          - name: firstName
+            label: Prenom
+            type: string
+          - name: lastName
+            label: Nom
+            type: string
+          - name: role
+            label: Role
+            type: string
+          - name: phone
+            label: Telephone optionnel
+            type: string
+          - name: email
+            label: Email optionnel
+            type: string
+          - name: photo
+            label: Photo du staff
+            type: image
+      - name: players
+        label: Joueurs
+        type: object
+        list:
+          collapsible:
+            collapsed: true
+            summary: "{primaryPosition} - {firstName} {lastName}"
+        fields:
+          - name: id
+            label: Identifiant joueur
+            type: string
+          - name: number
+            label: Numero
+            type: number
+          - name: category
+            label: Categorie
+            type: string
+          - name: group
+            label: Ancien groupe / compatibilite
+            type: string
+          - name: firstName
+            label: Prenom
+            type: string
+          - name: lastName
+            label: Nom
+            type: string
+          - name: primaryPosition
+            label: Poste principal
+            type: select
+            required: true
+            options:
+              values:
+                - Pilier gauche
+                - Talonneur
+                - Pilier droit
+                - Deuxième ligne
+                - Troisième ligne aile
+                - Numéro 8
+                - Demi de mêlée
+                - Demi d'ouverture
+                - Ailier
+                - Premier centre
+                - Deuxième centre
+                - Arrière
+                - Pilier
+                - Deuxième / troisième ligne
+                - Centre
+                - Trois-quarts polyvalent
+                - Non renseigné
+          - name: secondaryPosition
+            label: Poste secondaire optionnel
+            type: select
+            options:
+              values:
+                - Aucun poste secondaire
+                - Pilier gauche
+                - Talonneur
+                - Pilier droit
+                - Deuxième ligne
+                - Troisième ligne aile
+                - Numéro 8
+                - Demi de mêlée
+                - Demi d'ouverture
+                - Ailier
+                - Premier centre
+                - Deuxième centre
+                - Arrière
+                - Pilier
+                - Deuxième / troisième ligne
+                - Centre
+                - Trois-quarts polyvalent
+          - name: position
+            label: Ancien champ poste / compatibilite
+            type: string
+          - name: tag
+            label: Description courte
+            type: string
+          - name: photo
+            label: Photo joueur
+            type: image
+          - name: active
+            label: Joueur actif
+            type: boolean
+
+  - name: academy
+    label: Ecole de rugby
+    type: file
+    path: data/academy.json
+    format: json
+    fields:
+      - name: categories
+        label: Categories U6 a U14
+        type: object
+        list:
+          collapsible:
+            collapsed: true
+            summary: "{age} - {training}"
+        fields:
+          - name: age
+            label: Categorie
+            type: select
+            options:
+              values: [U6, U8, U10, U12, U14]
+          - name: label
+            label: Titre court
+            type: string
+          - name: summary
+            label: Description courte
+            type: text
+          - name: training
+            label: Horaires d'entrainement
+            type: string
+          - name: location
+            label: Lieu d'entrainement
+            type: string
+          - name: teamPhoto
+            label: Photo principale de l'equipe
+            type: image
+          - name: photos
+            label: Photos secondaires
+            type: object
+            list:
+              collapsible:
+                collapsed: true
+                summary: "{alt}"
+            fields:
+              - name: image
+                label: Photo
+                type: image
+              - name: alt
+                label: Description de la photo
+                type: string
+          - name: staff
+            label: Staff / educateurs
+            type: object
+            list:
+              collapsible:
+                collapsed: true
+                summary: "{role} - {firstName} {lastName}"
+            fields:
+              - name: firstName
+                label: Prenom
+                type: string
+              - name: lastName
+                label: Nom
+                type: string
+              - name: role
+                label: Role
+                type: string
+              - name: phone
+                label: Telephone optionnel
+                type: string
+              - name: email
+                label: Email optionnel
+                type: string
+              - name: photo
+                label: Photo du staff
+                type: image
+
+  - name: youth
+    label: Pole jeunes
+    type: file
+    path: data/youth.json
+    format: json
+    fields:
+      - name: categories
+        label: Categories jeunes
+        type: object
+        list:
+          collapsible:
+            collapsed: true
+            summary: "{age} - {training}"
+        fields:
+          - name: age
+            label: Categorie
+            type: select
+            options:
+              values: [U16, U19]
+          - name: label
+            label: Titre court
+            type: string
+          - name: summary
+            label: Description courte
+            type: text
+          - name: training
+            label: Horaires d'entrainement
+            type: string
+          - name: location
+            label: Lieu d'entrainement
+            type: string
+          - name: teamPhoto
+            label: Photo principale de l'equipe
+            type: image
+          - name: photos
+            label: Photos secondaires
+            type: object
+            list:
+              collapsible:
+                collapsed: true
+                summary: "{alt}"
+            fields:
+              - name: image
+                label: Photo
+                type: image
+              - name: alt
+                label: Description de la photo
+                type: string
+          - name: staff
+            label: Staff / educateurs
+            type: object
+            list:
+              collapsible:
+                collapsed: true
+                summary: "{role} - {firstName} {lastName}"
+            fields:
+              - name: firstName
+                label: Prenom
+                type: string
+              - name: lastName
+                label: Nom
+                type: string
+              - name: role
+                label: Role
+                type: string
+              - name: phone
+                label: Telephone optionnel
+                type: string
+              - name: email
+                label: Email optionnel
+                type: string
+              - name: photo
+                label: Photo du staff
+                type: image
+          - name: players
+            label: Joueurs de la categorie
+            type: object
+            list:
+              collapsible:
+                collapsed: true
+                summary: "{position} - {firstName} {lastName}"
+            fields:
+              - name: firstName
+                label: Prenom
+                type: string
+              - name: lastName
+                label: Nom
+                type: string
+              - name: position
+                label: Poste principal
+                type: string
+              - name: secondaryPosition
+                label: Poste secondaire optionnel
+                type: string
+              - name: photo
+                label: Photo joueur
+                type: image
+
+  - name: cadettes
+    label: Cadettes
+    type: file
+    path: data/feminines.json
+    format: json
+    fields:
+      - name: categories
+        label: Equipe cadettes
+        type: object
+        list:
+          collapsible:
+            collapsed: false
+            summary: "{age} - {training}"
+        fields:
+          - name: age
+            label: Categorie
+            type: string
+          - name: label
+            label: Titre court
+            type: string
+          - name: summary
+            label: Description courte
+            type: text
+          - name: training
+            label: Horaires d'entrainement
+            type: string
+          - name: location
+            label: Lieu d'entrainement
+            type: string
+          - name: teamPhoto
+            label: Photo principale de l'equipe
+            type: image
+          - name: photos
+            label: Photos secondaires
+            type: object
+            list:
+              collapsible:
+                collapsed: true
+                summary: "{alt}"
+            fields:
+              - name: image
+                label: Photo
+                type: image
+              - name: alt
+                label: Description de la photo
+                type: string
+          - name: staff
+            label: Staff / educateurs
+            type: object
+            list:
+              collapsible:
+                collapsed: true
+                summary: "{role} - {firstName} {lastName}"
+            fields:
+              - name: firstName
+                label: Prenom
+                type: string
+              - name: lastName
+                label: Nom
+                type: string
+              - name: role
+                label: Role
+                type: string
+              - name: phone
+                label: Telephone optionnel
+                type: string
+              - name: email
+                label: Email optionnel
+                type: string
+              - name: photo
+                label: Photo du staff
+                type: image
+          - name: players
+            label: Joueurs cadettes
+            type: object
+            list:
+              collapsible:
+                collapsed: true
+                summary: "{position} - {firstName} {lastName}"
+            fields:
+              - name: firstName
+                label: Prenom
+                type: string
+              - name: lastName
+                label: Nom
+                type: string
+              - name: position
+                label: Poste principal
+                type: string
+              - name: secondaryPosition
+                label: Poste secondaire optionnel
+                type: string
+              - name: photo
+                label: Photo joueuse
+                type: image
+
+  - name: settings
+    label: Parametres du site
+    type: file
+    path: data/settings.json
+    format: json
+    fields:
+      - name: clubName
+        label: Nom du club
+        type: string
+      - name: stadium
+        label: Stade
+        type: string
+      - name: city
+        label: Ville
+        type: string
+      - name: address
+        label: Adresse
+        type: string
+      - name: phone
+        label: Telephone
+        type: string
+      - name: email
+        label: Email
+        type: string
+      - name: facebook
+        label: Facebook
+        type: string
+      - name: instagram
+        label: Instagram
+        type: string
+      - name: mapsUrl
+        label: Lien Google Maps
+        type: string
+      - name: ffrUrl
+        label: Lien FFR
+        type: string
+      - name: joinTitle
+        label: Titre de la page Nous rejoindre
+        type: string
+      - name: joinText
+        label: Texte de la page Nous rejoindre
+        type: text
+      - name: pageBanners
+        label: Bandeaux des pages interieures
+        type: object
+        list:
+          collapsible:
+            collapsed: true
+            summary: "{key} - {title}"
+        fields:
+          - name: key
+            label: Page
+            type: select
+            required: true
+            options:
+              values:
+                - value: actualites
+                  label: Actualites
+                - value: actualite
+                  label: Article individuel
+                - value: calendrier
+                  label: Calendrier
+                - value: club
+                  label: Club
+                - value: histoire
+                  label: Histoire
+                - value: equipes
+                  label: Equipes
+                - value: ecole
+                  label: Ecole de rugby
+                - value: jeunes
+                  label: Pole jeunes
+                - value: cadettes
+                  label: Cadettes
+                - value: senior
+                  label: Seniors
+                - value: galerie
+                  label: Galerie
+                - value: partenaires
+                  label: Partenaires
+                - value: boutique
+                  label: Boutique
+                - value: nous-rejoindre
+                  label: Nous rejoindre / Contact
+                - value: notifications
+                  label: Notifications
+                - value: vote-logo
+                  label: Vote du logo
+          - name: title
+            label: Titre du bandeau
+            type: string
+            required: true
+          - name: subtitle
+            label: Sous-titre court
+            type: string
+          - name: image
+            label: Photo panoramique
+            type: image
+          - name: imageAlt
+            label: Texte alternatif de la photo
+            type: string
+          - name: position
+            label: Cadrage de la photo
+            type: select
+            options:
+              values:
+                - value: center
+                  label: Centre
+                - value: top
+                  label: Haut
+                - value: bottom
+                  label: Bas
+                - value: left
+                  label: Gauche
+                - value: right
+                  label: Droite
+          - name: overlayIntensity
+            label: Intensite de l'overlay (0 a 100)
+            type: number
+          - name: showSubtitle
+            label: Afficher le sous-titre
+            type: boolean
+          - name: label
+            label: Petit label optionnel
+            type: string
+          - name: showLabel
+            label: Afficher le petit label
+            type: boolean
+          - name: accent
+            label: Couleur d'accent
+            type: select
+            options:
+              values:
+                - value: burgundy
+                  label: Bordeaux
+                - value: navy
+                  label: Bleu marine
+                - value: white
+                  label: Blanc
+      - name: parameters
+        label: Infos pratiques
+        type: object
+        list:
+          collapsible:
+            collapsed: true
+            summary: "{title}"
+        fields:
+          - name: title
+            label: Titre
+            type: string
+          - name: text
+            label: Texte
+            type: text
+          - name: linkLabel
+            label: Texte du lien
+            type: string
+          - name: linkUrl
+            label: Adresse du lien
+            type: string
+
+  - name: logoVote
+    label: Vote nouveau logo
+    type: file
+    path: data/logo-vote.json
+    format: json
+    fields:
+      - name: settings
+        label: Reglages du vote
+        type: object
+        fields:
+          - name: voteEnabled
+            label: Activer le vote
+            type: boolean
+          - name: startDate
+            label: Date de debut
+            type: date
+          - name: endDate
+            label: Date de fin
+            type: date
+          - name: showInMenu
+            label: Afficher le lien dans le menu
+            type: boolean
+          - name: showPublicResults
+            label: Afficher les resultats publiquement
+            type: boolean
+          - name: allowOneVotePerEmail
+            label: Limiter a un vote par email
+            type: boolean
+      - name: logos
+        label: Propositions de logo
+        type: object
+        list:
+          collapsible:
+            collapsed: true
+            summary: "{order} - {title}"
+        fields:
+          - name: id
+            label: Identifiant unique
+            type: string
+          - name: title
+            label: Titre de la proposition
+            type: string
+          - name: image
+            label: Image du logo
+            type: image
+          - name: description
+            label: Description courte
+            type: text
+          - name: active
+            label: Proposition active
+            type: boolean
+          - name: order
+            label: Ordre d'affichage
+            type: number
+
+  - name: compositions
+    label: Compositions Studio RCC
+    type: file
+    path: data/compositions.json
+    format: json
+    fields:
+      - name: compositions
+        label: Brouillons de compositions
+        type: object
+        list:
+          collapsible:
+            collapsed: true
+            summary: "{team} - {title}"
+        fields:
+          - name: title
+            label: Titre
+            type: string
+          - name: team
+            label: Equipe
+            type: select
+            options:
+              values:
+                - Seniors
+                - U19
+                - U16
+                - Cadettes
+          - name: event
+            label: Match / evenement
+            type: string
+          - name: date
+            label: Date
+            type: date
+          - name: players
+            label: Joueurs
+            type: object
+            list:
+              collapsible:
+                collapsed: true
+                summary: "{number} - {name}"
+            fields:
+              - name: number
+                label: Numero
+                type: number
+              - name: name
+                label: Nom du joueur
+                type: string
+              - name: role
+                label: Poste
+                type: string
+              - name: photo
+                label: Photo
+                type: image
+          - name: substitutes
+            label: Remplacants
+            type: object
+            list:
+              collapsible:
+                collapsed: true
+                summary: "{number} - {name}"
+            fields:
+              - name: number
+                label: Numero
+                type: number
+              - name: name
+                label: Nom du joueur
+                type: string
+              - name: role
+                label: Poste
+                type: string
+              - name: photo
+                label: Photo
+                type: image
+          - name: captain
+            label: Capitaine
+            type: string
+          - name: viceCaptain
+            label: Vice-capitaine
+            type: string
+          - name: coach
+            label: Coach
+            type: string
+          - name: comments
+            label: Commentaires
+            type: text
+          - name: channels
+            label: Publication
+            type: object
+            fields:
+              - name: site
+                label: Site
+                type: boolean
+              - name: facebook
+                label: Facebook
+                type: boolean
+              - name: instagram
+                label: Instagram
+                type: boolean
+              - name: push
+                label: Notification
+                type: boolean
+
+  - name: newsletters
+    label: Newsletters Studio RCC
+    type: file
+    path: data/newsletters.json
+    format: json
+    fields:
+      - name: newsletters
+        label: Brouillons de newsletters
+        type: object
+        list:
+          collapsible:
+            collapsed: true
+            summary: "{month} {year} - {title}"
+        fields:
+          - name: id
+            label: Identifiant
+            type: string
+          - name: title
+            label: Titre
+            type: string
+          - name: header
+            label: En-tête de la newsletter
+            type: object
+            fields:
+              - name: title
+                label: Titre principal
+                type: string
+              - name: subtitle
+                label: Sous-titre
+                type: string
+              - name: issueNumber
+                label: Numéro de l'édition
+                type: string
+              - name: month
+                label: Mois
+                type: string
+              - name: year
+                label: Année
+                type: number
+              - name: season
+                label: Saison
+                type: string
+              - name: tagline
+                label: Slogan
+                type: string
+          - name: issueNumber
+            label: Numéro
+            type: string
+          - name: month
+            label: Mois
+            type: string
+          - name: year
+            label: Année
+            type: number
+          - name: season
+            label: Saison
+            type: string
+          - name: slogan
+            label: Slogan
+            type: string
+          - name: status
+            label: Statut
+            type: select
+            options:
+              values:
+                - draft
+                - published
+                - archived
+          - name: date
+            label: Date de publication
+            type: date
+          - name: period
+            label: Periode
+            type: string
+          - name: description
+            label: Description courte
+            type: text
+          - name: cover
+            label: Couverture
+            type: image
+          - name: pdf
+            label: PDF
+            type: file
+          - name: published
+            label: Publier sur le site
+            type: boolean
+          - name: intro
+            label: Introduction
+            type: text
+          - name: pages
+            label: Pages A4
+            type: object
+            list:
+              collapsible:
+                collapsed: true
+                summary: "Page {number}"
+            fields:
+              - name: number
+                label: Numéro de page
+                type: number
+              - name: blocks
+                label: Blocs de la page
+                type: object
+                list:
+                  collapsible:
+                    collapsed: true
+                    summary: "{type} - {title}"
+                fields:
+                  - name: id
+                    label: Identifiant
+                    type: string
+                  - name: type
+                    label: Type de bloc
+                    type: select
+                    options:
+                      values:
+                        - header
+                        - editorial
+                        - news
+                        - leadNews
+                        - interview
+                        - portrait
+                        - match
+                        - result
+                        - upcoming
+                        - calendar
+                        - academy
+                        - youth
+                        - cadettes
+                        - seniors
+                        - partner
+                        - number
+                        - important
+                        - progress
+                        - tomorrow
+                        - thanks
+                        - gallery
+                        - photo
+                        - quote
+                        - text
+                        - divider
+                        - footer
+                  - name: size
+                    label: Taille
+                    type: select
+                    options:
+                      values:
+                        - full
+                        - two-thirds
+                        - half
+                        - third
+                        - small
+                  - name: label
+                    label: Libellé
+                    type: string
+                  - name: title
+                    label: Titre
+                    type: string
+                  - name: subtitle
+                    label: Sous-titre
+                    type: string
+                  - name: text
+                    label: Texte
+                    type: text
+                  - name: image
+                    label: Image
+                    type: image
+                  - name: hideImage
+                    label: Masquer l'image
+                    type: boolean
+                  - name: align
+                    label: Alignement
+                    type: select
+                    options:
+                      values:
+                        - left
+                        - center
+                        - right
+                  - name: accent
+                    label: Accent
+                    type: select
+                    options:
+                      values:
+                        - burgundy
+                        - navy
+                        - light
+                  - name: link
+                    label: Lien
+                    type: string
+                  - name: photoCount
+                    label: Nombre de photos
+                    type: number
+          - name: items
+            label: Contenus selectionnes
+            type: object
+            list:
+              collapsible:
+                collapsed: true
+                summary: "{type} - {title}"
+            fields:
+              - name: type
+                label: Type
+                type: string
+              - name: title
+                label: Titre
+                type: string
+              - name: url
+                label: Lien
+                type: string
+          - name: blocks
+            label: Blocs de newsletter
+            type: object
+            list:
+              collapsible:
+                collapsed: true
+                summary: "{type} - {title}"
+            fields:
+              - name: type
+                label: Type de bloc
+                type: select
+                options:
+                  values:
+                    - editorial
+                    - news
+                    - result
+                    - calendar
+                    - interview
+                    - partner
+                    - photo
+                    - ranking
+                    - club
+                    - volunteer
+                    - quote
+                    - sponsors
+              - name: title
+                label: Titre
+                type: string
+              - name: text
+                label: Texte
+                type: text
+              - name: image
+                label: Image
+                type: image
+
+  - name: media_library
+    label: Mediatheque RCC
+    type: file
+    path: data/media-library.json
+    format: json
+    fields:
+      - name: assets
+        label: Images
+        type: object
+        list:
+          collapsible:
+            collapsed: true
+            summary: "{category} - {title}"
+        fields:
+          - name: title
+            label: Titre
+            type: string
+          - name: category
+            label: Rubrique
+            type: select
+            options:
+              values:
+                - Matchs
+                - Ecole de rugby
+                - Seniors
+                - U19
+                - U16
+                - Cadettes
+                - Partenaires
+                - Club House
+                - Terrain
+                - Benevoles
+                - Historique
+          - name: image
+            label: Image
+            type: image
+          - name: alt
+            label: Texte alternatif
+            type: string
+
+  - name: bureau
+    label: Organigramme du club
+    type: file
+    path: data/bureau.json
+    format: json
+    fields:
+      - name: presidentMessage
+        label: Mot du President
+        type: object
+        fields:
+          - name: name
+            label: Nom
+            type: string
+          - name: role
+            label: Fonction
+            type: string
+          - name: photo
+            label: Photo
+            type: image
+          - name: text
+            label: Texte
+            type: text
+      - name: members
+        label: Membres du bureau
+        type: object
+        list:
+          collapsible:
+            collapsed: true
+            summary: "{order} - {role} - {firstName} {lastName}"
+        fields:
+          - name: id
+            label: Identifiant
+            type: string
+          - name: firstName
+            label: Prenom
+            type: string
+          - name: lastName
+            label: Nom
+            type: string
+          - name: role
+            label: Fonction
+            type: string
+          - name: commission
+            label: Commission / responsabilite
+            type: string
+          - name: photo
+            label: Photo
+            type: image
+          - name: order
+            label: Ordre d'affichage
+            type: number
+
+settings:
+  hide: false

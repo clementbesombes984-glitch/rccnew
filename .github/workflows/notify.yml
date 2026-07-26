@@ -1,0 +1,37 @@
+name: RCC notifications
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - data/news.json
+      - data/matches.json
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Show modified notification files
+        env:
+          BEFORE_REF: ${{ github.event.before }}
+          CURRENT_REF: ${{ github.sha }}
+        run: |
+          echo "Commit avant: ${BEFORE_REF}"
+          echo "Commit actuel: ${CURRENT_REF}"
+          echo "Fichiers modifies:"
+          git diff --name-only "${BEFORE_REF}" "${CURRENT_REF}" -- data/news.json data/matches.json || true
+
+      - name: Send RCC notifications
+        if: ${{ vars.RCC_SITE_URL != '' }}
+        env:
+          BEFORE_REF: ${{ github.event.before }}
+          CURRENT_REF: ${{ github.sha }}
+          RCC_SITE_URL: ${{ vars.RCC_SITE_URL }}
+          RCC_PUSH_ADMIN_TOKEN: ${{ secrets.RCC_PUSH_ADMIN_TOKEN }}
+        run: node scripts/notify-changes.js

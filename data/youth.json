@@ -1,0 +1,35 @@
+{
+  "categories": [
+    {
+      "age": "U16",
+      "label": "Accélérer la progression",
+      "summary": "Exigence physique, lecture du jeu, conquête, lancement de jeu et responsabilité dans le groupe.",
+      "training": "Mercredi 19H30 - Vendredi 19H30",
+      "staff": [
+        {
+          "firstName": "Dylan",
+          "lastName": "Lesbarreres",
+          "photo": "/assets/uploads/screenshot20260714075450comandroidchromechrometabbedactivity.jpg"
+        },
+        {
+          "firstName": "Lenny ",
+          "lastName": "Bernard ",
+          "photo": "/assets/uploads/lenny-bernard-1.jpg"
+        }
+      ]
+    },
+    {
+      "age": "U19",
+      "label": "Préparer le rugby senior",
+      "summary": "Un cadre compétitif pour franchir un cap, gagner en autonomie et défendre les couleurs du club.",
+      "training": "Mercredi 19h30 · Vendredi 19h30 ",
+      "staff": [
+        {
+          "firstName": "Clément",
+          "lastName": "Besombes",
+          "photo": "/assets/uploads/img20260708204618-3.jpg"
+        }
+      ]
+    }
+  ]
+}

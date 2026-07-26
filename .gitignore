@@ -1,0 +1,17 @@
+.env
+.env.*
+!.env.example
+vapid.local.txt
+vapid.json
+node_modules/
+.claude/
+*.bak
+*.bak.*
+*.tmp
+*.log
+coverage/
+dist/
+cache/
+
+# Local visual experiments: never deploy with the public site.
+/design-lab-co/

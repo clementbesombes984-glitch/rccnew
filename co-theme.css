@@ -1,0 +1,4479 @@
+@import url('https://fonts.googleapis.com/css2?family=Anton&family=Barlow+Condensed:wght@500;600;700;800;900&family=Oswald:ital,wght@0,400;0,500;0,600;0,700;1,600;1,700&family=Inter:wght@400;500;600;700;800&display=swap');
+
+/* Deux couches independantes, la V3.6.3 (nouvelle refonte) prioritaire sur l'ancienne base -- voir memoire du projet pour le detail de cette fusion.
+   "site-fixes" est une 3e couche, toujours la plus prioritaire, pour les correctifs post-integration (elle ne remplace ni ne duplique le contenu des deux autres). */
+@layer legacy-theme, v3-design, site-fixes;
+
+@layer legacy-theme {
+
+:root {
+  --co-black: #05070a;
+  --co-navy: #071a37;
+  --co-navy-deep: #040d1e;
+  --co-navy-soft: #10294f;
+  --co-burgundy: #9d123d;
+  --co-burgundy-deep: #6d0c2b;
+  --co-red: #d01752;
+  --co-white: #fff;
+  --co-mist: #eef1f4;
+  --co-muted: #a9b0ba;
+  --co-line: rgba(255, 255, 255, .15);
+  --co-shell: min(1280px, calc(100% - 64px));
+  --co-shell-wide: min(1480px, calc(100% - 64px));
+  --co-ease: cubic-bezier(.22, .61, .36, 1);
+  --co-ease-out: cubic-bezier(.16, 1, .3, 1);
+
+  /* Plus de fond blanc : la toile du site est marine, le bordeaux domine les blocs.
+     Le blanc pur ne sert plus qu'a l'ecriture et a de tres rares liserés de contraste. */
+  --co-paper: var(--co-navy-deep);
+  --co-ink: #ffffff;
+  --co-slate: #c7cedb;
+  --co-hairline: rgba(255, 255, 255, .16);
+  --co-hairline-soft: rgba(255, 255, 255, .08);
+
+  /* Cartes : bordeaux dominant par defaut, bleu marine en variante secondaire -- le blanc n'est plus la carte par defaut */
+  --co-card: linear-gradient(155deg, #9d123d 0%, #6d0c2b 100%);
+  --co-card-alt: #6d0c2b;
+  --co-card-ink: #ffffff;
+  --co-card-slate: #e7c3ce;
+  --co-card-line: rgba(255, 255, 255, .16);
+  --co-card-navy: linear-gradient(155deg, var(--co-navy-soft) 0%, var(--co-navy-deep) 100%);
+  --co-shadow-sm: 0 10px 26px rgba(9, 20, 40, .07);
+  --co-shadow-md: 0 24px 54px rgba(9, 20, 40, .12);
+  --co-shadow-lg: 0 40px 90px rgba(6, 14, 30, .28);
+  --co-radius: 16px;
+  --co-radius-sm: 18px;
+  --co-radius-pill: 999px;
+  --co-font-display: 'Oswald', Impact, 'Arial Narrow Bold', sans-serif;
+  /* Voix graphique des tres grands titres (hero, h1/h2) -- volontairement tres
+     differente d'Oswald (deja proche de l'Impact/Arial Narrow d'origine) pour que
+     le site ne se lise plus comme une variation de l'ancien RCC. */
+  --co-font-heavy: 'Anton', 'Oswald', Impact, sans-serif;
+  --co-font-text: 'Inter', Arial, Helvetica, sans-serif;
+
+  /* Echelle typographique tres large -- magazine sportif */
+  --co-fs-hero: clamp(4rem, 10vw, 11rem);
+  --co-fs-h1: clamp(3.4rem, 7.4vw, 7.8rem);
+  --co-fs-h2: clamp(2.6rem, 5.6vw, 5.6rem);
+  --co-fs-h3: clamp(1.4rem, 2.1vw, 2rem);
+  --co-space-section: clamp(120px, 13vw, 210px);
+  --co-space-card: clamp(30px, 3vw, 48px);
+
+  /* Photothèque RCC réutilisée pour les fonds éditoriaux : la photo est la matière première */
+  --co-photo-action: url('./assets/uploads/FB_IMG_1784494043353.jpg');
+  --co-photo-huddle: url('./assets/uploads/FB_IMG_1784493924968.jpg');
+  --co-photo-scrum: url('./assets/uploads/FB_IMG_1784493770215.jpg');
+  --co-photo-youth: url('./assets/uploads/FB_IMG_1784494694526.jpg');
+  --co-photo-run: url('./assets/uploads/FB_IMG_1784493960743.jpg');
+  --co-photo-women: url('./assets/uploads/FB_IMG_1784494571502.jpg');
+  --co-photo-ruck: url('./assets/uploads/FB_IMG_1784494588492.jpg');
+  --co-photo-ball-rain: url('./assets/uploads/co-texture-ballon-pluie.avif');
+  --co-photo-ball-sunset: url('./assets/uploads/co-texture-ballon-sunset.avif');
+
+  /* Texture discrete pour les sections "grain" */
+  --co-texture: radial-gradient(rgba(255,255,255,.055) 1px, transparent 1px);
+}
+
+/* ===================================================================
+   BASE
+   =================================================================== */
+html { scroll-behavior: smooth; }
+body {
+  overflow-x: hidden;
+  background: var(--co-paper);
+  color: var(--co-ink);
+  font-family: var(--co-font-text);
+}
+body.co-menu-open { overflow: hidden; }
+.page-shell { width: var(--co-shell); max-width: none; }
+
+body input,
+body textarea,
+body select,
+body button { font-family: var(--co-font-text); }
+
+body :is(h1, h2, h3, h4),
+body :is(.section-kicker, .eyebrow, .brand-name, .button, .badge, .competition, .teams,
+  .staff-card strong, .values-band strong, .club-info strong, .club-signature-text strong,
+  .countdown-units strong, .stat strong, .last-score-badge, .calendar-date strong,
+  .roster-title h2, .footer-brand strong) {
+  font-family: var(--co-font-display);
+  letter-spacing: .01em;
+}
+
+body ::selection { background: var(--co-burgundy); color: var(--co-white); }
+
+/* Kicker "double barre" inclinee -- signature graphique inspiree des pictos
+   (double-slash, chevrons) des en-tetes de section des sites de club pro,
+   remplace le simple trait plat de l'ancienne version. */
+body .section-kicker,
+body .eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--co-burgundy);
+  font-weight: 700;
+  font-size: .82rem;
+  letter-spacing: .16em;
+}
+body .section-kicker::before,
+body .eyebrow::before {
+  content: "";
+  display: inline-flex;
+  width: 9px;
+  height: 20px;
+  background: currentColor;
+  transform: skewX(-16deg);
+}
+body .section-kicker::after,
+body .eyebrow::after {
+  content: "";
+  display: inline-flex;
+  width: 4px;
+  height: 20px;
+  margin-left: -4px;
+  background: currentColor;
+  opacity: .45;
+  transform: skewX(-16deg);
+}
+body .section-kicker::before { content: ""; }
+
+/* ===================================================================
+   EN-TETE / NAVIGATION
+   =================================================================== */
+/* En-tete transparent par defaut (le contenu/la photo du haut de page se voit au
+   travers, avec un leger degrade pour garder logo/texte lisibles), qui se
+   colorise en plein marine des que la page defile -- comportement des 3 sites de
+   reference plutot qu'un bandeau marine fixe en permanence. */
+body .site-header {
+  position: fixed;
+  z-index: 1000;
+  inset: 0 0 auto;
+  height: 84px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 clamp(20px, 3vw, 48px);
+  border: 0;
+  border-bottom: 3px solid transparent;
+  background: linear-gradient(180deg, rgba(4, 10, 22, .65) 0%, rgba(4, 10, 22, 0) 100%);
+  box-shadow: none;
+  transition: height 300ms var(--co-ease-out), box-shadow 300ms var(--co-ease-out),
+    background 300ms var(--co-ease-out), border-color 300ms var(--co-ease-out);
+}
+body .site-header.is-scrolled {
+  height: 62px;
+  background: var(--co-navy);
+  border-bottom-color: var(--co-burgundy);
+  box-shadow: 0 16px 40px rgba(4, 10, 22, .3);
+}
+body.co-menu-open .site-header {
+  height: 84px;
+  background: var(--co-paper);
+  border-bottom-color: var(--co-hairline);
+}
+body .site-header .brand {
+  position: absolute;
+  z-index: 1002;
+  left: 50%;
+  top: 50%;
+  width: auto;
+  margin: 0;
+  transform: translate(-50%, -50%);
+}
+body .site-header .brand img {
+  width: 54px;
+  height: 54px;
+  object-fit: contain;
+  filter: drop-shadow(0 8px 18px rgba(0, 0, 0, .35));
+  transition: width 300ms var(--co-ease-out), height 300ms var(--co-ease-out), transform 220ms var(--co-ease-out), filter 200ms ease;
+}
+body .site-header.is-scrolled .brand img { width: 44px; height: 44px; }
+body.co-menu-open .site-header .brand img { filter: none; }
+body .site-header .brand:hover img { transform: scale(1.05); }
+
+/* Cluster utilitaire cote droit de l'en-tete (injecte par co-theme.js) --
+   icone Boutique + CTA "Nous rejoindre", comme les liens utilitaires en tete des
+   sites Castres/ASM/Stade. */
+body .co-header-utility {
+  display: flex;
+  align-items: center;
+  gap: clamp(16px, 2vw, 28px);
+  margin-left: auto;
+}
+body.co-menu-open .co-header-utility { opacity: 0; pointer-events: none; }
+body .co-header-utility-icon {
+  font-size: 1.2rem;
+  line-height: 1;
+  color: var(--co-white);
+  transition: transform 200ms var(--co-ease-out), color 200ms ease;
+}
+body .co-header-utility-icon:hover { color: var(--co-red); transform: translateY(-2px); }
+body .co-header-utility-cta {
+  display: none;
+}
+@media (min-width: 620px) {
+  body .co-header-utility-cta {
+    display: inline-flex;
+    align-items: center;
+    height: 38px;
+    padding: 0 20px;
+    border-radius: var(--co-radius-pill);
+    background: var(--co-burgundy);
+    color: var(--co-white);
+    font: 600 .76rem/1 var(--co-font-display);
+    letter-spacing: .05em;
+    text-transform: uppercase;
+    transition: background 200ms ease, transform 200ms var(--co-ease-out);
+  }
+  body .co-header-utility-cta:hover { background: var(--co-red); transform: translateY(-2px); }
+}
+
+/* Bouton menu / fermer : minimal, deux traits + libelle, aucun ornement */
+body .menu-toggle {
+  position: relative;
+  z-index: 1002;
+  inset: auto;
+  width: auto;
+  height: 40px;
+  display: block;
+  margin: 0;
+  padding: 0 0 0 34px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  color: var(--co-white);
+  transition: color 200ms ease;
+}
+body .menu-toggle:hover { color: var(--co-burgundy); }
+body .menu-toggle::after {
+  content: "Menu";
+  position: absolute;
+  left: 34px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: currentColor;
+  font: 600 .8rem/1 var(--co-font-display);
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+body .menu-toggle[aria-expanded="true"]::after { content: "Fermer"; }
+/* Les deux traits sont empiles (signe "=") au lieu d'etre cote a cote */
+body .menu-toggle span {
+  position: absolute;
+  left: 0;
+  width: 22px;
+  height: 1.5px;
+  margin: 0;
+  background: currentColor;
+  transition: transform 260ms var(--co-ease), opacity 180ms ease, top 260ms var(--co-ease);
+}
+body .menu-toggle span:first-child { top: 15px; }
+body .menu-toggle span:last-child { top: 23px; }
+body .menu-toggle[aria-expanded="true"] span:first-child { top: 19px; transform: rotate(45deg); }
+body .menu-toggle[aria-expanded="true"] span:last-child { top: 19px; transform: rotate(-45deg); }
+
+/* ===================================================================
+   MEGA-MENU -- centre de navigation plein ecran, une seule grille sobre
+   =================================================================== */
+body .site-nav.v1-nav {
+  --co-nav-pad-top: clamp(132px, 16vh, 176px);
+  --co-nav-pad-x: clamp(32px, 5vw, 72px);
+  position: fixed;
+  z-index: 999;
+  inset: 0;
+  height: 100vh;
+  height: 100dvh;
+  max-height: none !important;
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) minmax(280px, 22vw);
+  align-content: start;
+  align-items: start;
+  column-gap: clamp(28px, 3vw, 48px);
+  row-gap: clamp(48px, 6vh, 72px);
+  margin: 0;
+  padding: var(--co-nav-pad-top) var(--co-nav-pad-x) clamp(48px, 6vh, 72px);
+  overflow-y: auto;
+  counter-reset: navcol;
+  background:
+    radial-gradient(circle at 92% 6%, rgba(157, 18, 61, .32), transparent 40%),
+    radial-gradient(circle at 4% 96%, rgba(157, 18, 61, .16), transparent 44%),
+    var(--co-texture),
+    linear-gradient(165deg, var(--co-navy) 0%, var(--co-navy-deep) 100%);
+  background-size: auto, auto, 5px 5px, auto;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transform: translateY(-10px);
+  transition: opacity 360ms var(--co-ease-out), transform 360ms var(--co-ease-out), visibility 0s linear 360ms;
+}
+body .site-nav.v1-nav.is-open {
+  max-height: none;
+  height: 100vh !important;
+  height: 100dvh !important;
+  min-height: 0 !important;
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transform: translateY(0);
+  transition-delay: 0s;
+}
+body .site-nav.v1-nav > a,
+body .site-nav.v1-nav > .nav-dropdown {
+  min-width: 0;
+  align-self: start;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+/* L'ancien styles.css met .nav-dropdown en display:inline-flex (titre + sous-menu
+   cote a cote sur une ligne). Ca deborde dans la colonne suivante et superpose les
+   titres. Le titre doit rester au-dessus de son sous-menu, jamais a cote. */
+body .site-nav.v1-nav .nav-dropdown {
+  display: block !important;
+}
+
+/* Galerie / Partenaires / Boutique / Contact / Notifications sortent du flux de la
+   grille (position absolute, ancree sur la zone de contenu de .site-nav) pour pouvoir
+   s'empiler avec un espacement fixe et identique, independant de la hauteur des
+   colonnes Accueil/Club/Equipes (qui contiennent des sous-menus plus ou moins longs).
+   Accueil, Le Club et Les Equipes se placent naturellement dans les colonnes 1-3.
+   Uniquement au-dela de 1080px : en dessous, la grille repasse en 1 seule colonne
+   (voir la section RESPONSIVE) et ces liens doivent rester dans le flux normal,
+   sous peine de se superposer au reste du menu empile verticalement. */
+@media (min-width: 1081px) {
+  body .site-nav.v1-nav > a[href="./galerie.html"],
+  body .site-nav.v1-nav > a[href="./partenaires.html"],
+  body .site-nav.v1-nav > a[href="./boutique.html"],
+  body .site-nav.v1-nav > a.nav-cta,
+  body .site-nav.v1-nav > a.notification-link {
+    position: absolute !important;
+    right: var(--co-nav-pad-x) !important;
+    left: auto !important;
+    grid-column: auto;
+    grid-row: auto;
+  }
+  /* Chaque top = padding-top de la nav + N * (hauteur d'encadre 60px + 16px d'ecart). */
+  body .site-nav.v1-nav > a[href="./galerie.html"] { top: var(--co-nav-pad-top) !important; }
+  body .site-nav.v1-nav > a[href="./partenaires.html"] { top: calc(var(--co-nav-pad-top) + 76px) !important; }
+  body .site-nav.v1-nav > a[href="./boutique.html"] { top: calc(var(--co-nav-pad-top) + 152px) !important; }
+  body .site-nav.v1-nav > a.nav-cta { top: calc(var(--co-nav-pad-top) + 228px) !important; }
+  body .site-nav.v1-nav > a.notification-link { top: calc(var(--co-nav-pad-top) + 320px) !important; }
+}
+
+/* ----- Titres de colonne : liste editoriale, sans numero, jamais de retour a la ligne ----- */
+body .site-nav.v1-nav > a,
+body .site-nav.v1-nav .nav-dropdown-main {
+  position: relative;
+  display: block;
+  width: fit-content;
+  max-width: 100%;
+  white-space: nowrap !important;
+  margin-bottom: 28px;
+  padding-left: 0;
+  color: var(--co-white);
+  font: 600 clamp(1.05rem, 1.6vw, 1.5rem)/1.2 var(--co-font-display);
+  letter-spacing: 0;
+  text-transform: none;
+  transition: color 180ms ease;
+}
+/* Les numeros (01, 02...) sont supprimes : plus de contenu genere sur ::before. */
+body .site-nav.v1-nav.is-open > a::before,
+body .site-nav.v1-nav.is-open .nav-dropdown-main::before {
+  content: none !important;
+}
+/* "Le Club" -> "Club" et "Les Equipes" -> "Equipes" : le texte reel (venant du HTML/JS,
+   non modifiable ici) est masque et remplace par un ::before (en flux normal, au-dessus
+   du texte reel qui passe a font-size:0). Le ::after reste libre : c'est lui que
+   l'ancien styles.css utilise pour la barre de soulignement au survol (meme regle que
+   pour "Accueil"), donc Club/Equipes heritent automatiquement du meme soulignage. */
+body .site-nav.v1-nav.is-open.is-open a.nav-dropdown-main[href="./club.html"],
+body .site-nav.v1-nav.is-open.is-open a.nav-dropdown-main[href="./equipes.html"] {
+  /* specificite volontairement gonflee (classe repetee + selecteur de type "a") pour
+     passer devant la regle generique .nav-dropdown-main{font-size:...!important} qui
+     inclut elle-meme un selecteur "a.nav-text-link:not(...)" plus specifique que prevu. */
+  font-size: 0 !important;
+}
+body .site-nav.v1-nav.is-open.is-open .nav-dropdown-main[href="./club.html"]::before,
+body .site-nav.v1-nav.is-open.is-open .nav-dropdown-main[href="./equipes.html"]::before {
+  content: "Club" !important;
+  position: static;
+  display: block;
+  color: inherit;
+  font: 600 clamp(1.05rem, 1.6vw, 1.5rem)/1.2 var(--co-font-display);
+  white-space: nowrap;
+}
+body .site-nav.v1-nav.is-open.is-open .nav-dropdown-main[href="./equipes.html"]::before {
+  content: "Équipes" !important;
+}
+body .site-nav.v1-nav a:hover,
+body .site-nav.v1-nav a.is-active { color: var(--co-red); }
+
+/* Club et Equipes : le soulignage ne doit apparaitre qu'au survol (demande explicite),
+   jamais reste fixe -- contrairement a Accueil, l'ancienne regle affiche aussi ce trait
+   en permanence des que la page (equipes.html/club.html) est la page courante
+   (.nav-dropdown.is-active). On desactive ce cas precis, en laissant :hover intact. */
+body .site-nav.v1-nav .nav-dropdown.is-active > a.nav-dropdown-main[href="./club.html"]:not(:hover)::after,
+body .site-nav.v1-nav .nav-dropdown.is-active > a.nav-dropdown-main[href="./equipes.html"]:not(:hover)::after {
+  transform: scaleX(0) !important;
+  transform-origin: right;
+}
+
+/* Neutralise l'ancienne regle mobile "v0" qui forcait un texte transparent
+   (attribut data-mobile-label absent de ce balisage). */
+body .site-nav.v1-nav.is-open a.nav-text-link:not([href="./boutique.html"]),
+body .site-nav.v1-nav.is-open .nav-dropdown-main,
+body .site-nav.v1-nav.is-open a[href="./boutique.html"],
+body .site-nav.v1-nav.is-open a.nav-cta {
+  /* clamp() plutot qu'une valeur fixe : au-dela de 6 colonnes, 1.5rem fixe faisait
+     deborder les intitules longs ("Les Equipes") sur la colonne voisine. */
+  font-size: clamp(1.05rem, 1.6vw, 1.5rem) !important;
+  color: var(--co-white) !important;
+}
+
+/* ----- Sous-liens : sobres, tres espaces, sur fond marine ----- */
+body .site-nav.v1-nav .nav-submenu {
+  position: static;
+  width: auto;
+  height: auto;
+  margin: 0;
+  padding: 0 0 0 36px;
+  overflow: visible;
+  opacity: 1 !important;
+  visibility: visible !important;
+  pointer-events: auto !important;
+  transform: none;
+  /* En dessous de 1120px, l'ancien styles.css force display:none!important sur les
+     sous-menus tant que .is-submenu-open n'est pas actif (logique accordeon "v0").
+     Ici, tous les sous-menus doivent rester ouverts en permanence. */
+  display: block !important;
+}
+body .site-nav.v1-nav .nav-submenu-panel {
+  min-width: 0;
+  display: flex !important;
+  flex-direction: column;
+  gap: 19px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+body .site-nav.v1-nav .nav-submenu a {
+  display: block !important;
+  width: auto !important;
+  min-height: 0 !important;
+  justify-content: flex-start !important;
+  text-align: left !important;
+  padding: 0 !important;
+  margin: 0;
+  border: 0;
+  color: rgba(255, 255, 255, .62);
+  font: 450 1rem/1.4 var(--co-font-text);
+  text-transform: none;
+  transition: color 160ms ease;
+}
+body .site-nav.v1-nav .nav-submenu a:hover { color: var(--co-white); }
+
+/* ----- Notifications : lien simple, sans cadre, sous les 4 encadres ----- */
+body .site-nav.v1-nav > a.notification-link {
+  width: auto !important;
+  height: auto !important;
+  flex: none !important;
+  min-height: 0;
+  padding-left: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  text-align: left;
+  font-size: 22px !important;
+}
+body .site-nav.v1-nav > a.notification-link::after {
+  content: "Notifications";
+  display: block;
+  color: var(--co-white);
+  font: 600 clamp(1.05rem, 1.6vw, 1.5rem)/1.2 var(--co-font-display);
+}
+
+/* ----- Administration : icone seule, meme taille que l'icone Notifications, juste
+   a cote (le texte "Administration" est supprime). L'ancien styles.css a PLUSIEURS
+   regles concurrentes pour font-size sur .notification-link/.settings-link, dont une
+   qui remet a 0 en dessous de 1120px -- on fixe donc explicitement 22px ici, a toutes
+   les tailles, pour les deux icones. */
+body .site-nav.v1-nav > a.admin-link {
+  grid-column: 1;
+  width: fit-content !important;
+  height: auto !important;
+  min-width: 0;
+  min-height: 0;
+  flex: none !important;
+  align-self: end;
+  display: inline-flex;
+  align-items: center;
+  padding: 0;
+  margin-top: 32px;
+  border: 0;
+  border-radius: 0;
+  color: rgba(255, 255, 255, .4);
+  font-size: 22px !important;
+  transition: color 200ms ease;
+}
+body .site-nav.v1-nav > a.admin-link::after { content: none !important; }
+body .site-nav.v1-nav > a.admin-link:hover { color: var(--co-red); }
+@media (min-width: 1081px) {
+  body .site-nav.v1-nav > a.admin-link {
+    grid-column: auto !important;
+    grid-row: auto !important;
+    position: absolute !important;
+    align-self: auto;
+    margin-top: 0;
+    /* juste a gauche de l'icone Notifications, meme "top". */
+    right: calc(var(--co-nav-pad-x) + 34px) !important;
+    left: auto !important;
+    top: calc(var(--co-nav-pad-top) + 320px) !important;
+  }
+}
+
+/* ----- Neutralisation des cadres/cartes heretes de l'ancien design (styles.css) -----
+   Les regles @media(min-width:1121px) et @media(max-width:1120px) de l'ancien site
+   posent un fond + une bordure (pastille) sur .nav-text-link/.nav-dropdown-main et un
+   panneau opaque sur .nav-submenu-panel. Leur specificite (jusqu'a !important sur les
+   etats hover/actif) passe au-dessus des regles ci-dessus qui ne touchent pas encore
+   ces proprietes : on les force ici explicitement, a toutes les tailles d'ecran. */
+body .site-nav.v1-nav a.nav-text-link,
+body .site-nav.v1-nav .nav-dropdown-main,
+body .site-nav.v1-nav .nav-dropdown,
+body .site-nav.v1-nav .nav-submenu,
+body .site-nav.v1-nav .nav-submenu-panel,
+body .site-nav.v1-nav a.nav-cta,
+body .site-nav.v1-nav .nav-submenu a {
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+body .site-nav.v1-nav a.nav-text-link:hover,
+body .site-nav.v1-nav .nav-dropdown-main:hover,
+body .site-nav.v1-nav a.nav-text-link.is-active,
+body .site-nav.v1-nav .nav-dropdown.is-active,
+body .site-nav.v1-nav .nav-dropdown.is-active > .nav-dropdown-main,
+body .site-nav.v1-nav .nav-dropdown.is-submenu-open .nav-dropdown-main,
+body .site-nav.v1-nav .nav-submenu a:hover,
+body .site-nav.v1-nav .nav-submenu a.is-active {
+  border: 0 !important;
+  border-color: transparent !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+/* ----- Galerie / Partenaires / Boutique / Contact : petits encadres, meme taille,
+   empiles a droite du menu (colonne 4). Volontairement plus discrets que les grands
+   titres Accueil/Club/Equipes. ----- */
+body .site-nav.v1-nav > a[href="./galerie.html"],
+body .site-nav.v1-nav > a[href="./partenaires.html"],
+body .site-nav.v1-nav > a[href="./boutique.html"],
+body .site-nav.v1-nav > a.nav-cta {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  width: 100% !important;
+  max-width: none !important;
+  flex: none !important;
+  height: 60px !important;
+  min-height: 60px !important;
+  margin: 0 !important;
+  padding: 0 22px !important;
+  border: 1px solid rgba(255, 255, 255, .22) !important;
+  border-radius: 2px !important;
+  background: rgba(255, 255, 255, .03) !important;
+  color: var(--co-white) !important;
+  font: 600 1rem/1.2 var(--co-font-display) !important;
+  letter-spacing: .01em;
+  text-transform: none;
+  white-space: nowrap;
+  transition: border-color 200ms ease, background 200ms ease, color 200ms ease;
+}
+body .site-nav.v1-nav > a[href="./galerie.html"]:hover,
+body .site-nav.v1-nav > a[href="./partenaires.html"]:hover,
+body .site-nav.v1-nav > a[href="./boutique.html"]:hover,
+body .site-nav.v1-nav > a.nav-cta:hover {
+  border-color: var(--co-red) !important;
+  background: rgba(157, 18, 61, .16) !important;
+  color: var(--co-white) !important;
+}
+body .site-nav.v1-nav > a.notification-link {
+  width: 100% !important;
+  max-width: none !important;
+  text-align: left;
+}
+@media (min-width: 1081px) {
+  body .site-nav.v1-nav > a[href="./galerie.html"],
+  body .site-nav.v1-nav > a[href="./partenaires.html"],
+  body .site-nav.v1-nav > a[href="./boutique.html"],
+  body .site-nav.v1-nav > a.nav-cta {
+    width: clamp(280px, 22vw, 420px) !important;
+    max-width: none !important;
+  }
+  /* Notifications reste juste une icone (pas un encadre pleine largeur) pour que
+     Administration puisse se placer immediatement a sa gauche. */
+  body .site-nav.v1-nav > a.notification-link {
+    width: fit-content !important;
+    max-width: none !important;
+  }
+}
+
+/* ===================================================================
+   HERO ACCUEIL
+   =================================================================== */
+.co-home-hero {
+  position: relative;
+  min-height: 100svh;
+  display: flex;
+  align-items: flex-end;
+  overflow: hidden;
+  isolation: isolate;
+  /* Silhouette en biais (bord bas coupe en diagonale) -- rupture nette avec le
+     rectangle plein-cadre de l'ancienne version, inspiree des heros ASM/Stade.
+     Le fin liseré marine qui apparait sous la coupe (fond de la page, deja marine)
+     sert de transition naturelle avec la section suivante, sans chevauchement. */
+  clip-path: polygon(0 0, 100% 0, 100% 94%, 0 100%);
+}
+.co-home-hero::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+  background:
+    linear-gradient(90deg, rgba(3,7,15,.95) 0%, rgba(3,7,15,.6) 44%, rgba(3,7,15,.18) 76%),
+    linear-gradient(0deg, rgba(2,5,11,.96) 0%, rgba(2,5,11,.15) 46%, transparent 72%);
+}
+.co-home-hero::after {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  right: -10vw;
+  bottom: -24vw;
+  width: 60vw;
+  aspect-ratio: 1;
+  border-left: 15vw solid rgba(157,18,61,.32);
+  transform: rotate(18deg);
+}
+.co-hero-media { position: absolute; z-index: -2; inset: 0; overflow: hidden; }
+.co-hero-media img {
+  position: absolute;
+  inset: -1.5%;
+  width: 103%;
+  height: 103%;
+  max-width: none;
+  object-fit: cover;
+  object-position: center;
+  opacity: 0;
+  transform: scale(1.04);
+  transition: opacity 750ms var(--co-ease), transform 7s linear;
+}
+.co-hero-media img.is-active { opacity: 1; transform: scale(1.1); }
+.co-hero-content {
+  position: relative;
+  width: min(840px, calc(100% - 96px));
+  margin: 0 0 clamp(96px, 13vh, 148px) max(48px, calc((100vw - 1280px) / 2));
+}
+.co-hero-story { display: block; width: fit-content; max-width: 100%; transition: opacity 280ms var(--co-ease), transform 280ms var(--co-ease); }
+.co-hero-content.is-changing .co-hero-story { opacity: 0; transform: translateY(10px); }
+/* Pastille pleine (comme le badge "Categorie" de Castres) plutot qu'un simple
+   libelle souligne -- pose la meta directement comme une etiquette sur la photo. */
+.co-hero-meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 22px;
+  padding: 9px 20px;
+  border-radius: var(--co-radius-pill);
+  background: var(--co-burgundy);
+  color: var(--co-white);
+  font: 600 italic .74rem/1.3 var(--co-font-display);
+  letter-spacing: .14em;
+  text-transform: uppercase;
+}
+.co-hero-meta::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--co-white); }
+.co-home-hero h1 {
+  max-width: 820px;
+  margin: 0 0 26px;
+  color: var(--co-white);
+  font-family: var(--co-font-heavy);
+  font-size: var(--co-fs-hero);
+  font-weight: 400;
+  line-height: .88;
+  letter-spacing: 0;
+  text-transform: uppercase;
+  text-wrap: balance;
+  overflow-wrap: anywhere;
+}
+.co-hero-summary {
+  max-width: 620px;
+  display: -webkit-box;
+  margin: 0;
+  overflow: hidden;
+  color: #d7dce4;
+  font-size: clamp(1.02rem, 1.3vw, 1.22rem);
+  line-height: 1.68;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+}
+.co-hero-actions { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 38px; }
+.co-hero-controls { display: flex; align-items: center; gap: 14px; margin-top: 32px; }
+.co-hero-controls[hidden] { display: none; }
+.co-hero-arrow,
+.co-hero-dot {
+  border: 1px solid rgba(255,255,255,.4);
+  border-radius: 50%;
+  color: var(--co-white);
+  background: rgba(5,6,8,.32);
+  cursor: pointer;
+  transition: border-color 200ms ease, background 200ms ease, transform 200ms var(--co-ease-out);
+}
+.co-hero-arrow { width: 40px; height: 40px; padding: 0; border-radius: 50%; }
+.co-hero-arrow:hover { border-color: var(--co-red); background: rgba(157,18,61,.28); transform: translateY(-2px); }
+.co-hero-dots { display: flex; align-items: center; gap: 8px; }
+.co-hero-dot { width: 26px; height: 3px; padding: 0; border: 0; border-radius: 2px; background: rgba(255,255,255,.32); }
+.co-hero-dot[aria-current="true"] { background: var(--co-red); width: 40px; }
+
+/* ===================================================================
+   RANGEE "STORIES" -- nouveau bloc, raccourcis photo vers les sections cles,
+   inspire des tuiles reel/story en tete de page (Stade Français) et des
+   raccourcis "en images" des sites de club pro. Injecte dans index.html,
+   n'existait pas avant cette passe.
+   =================================================================== */
+body .co-story-row {
+  display: flex;
+  gap: 16px;
+  width: var(--co-shell);
+  margin-inline: auto;
+  padding: clamp(28px, 4vw, 44px) 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+body .co-story-row::-webkit-scrollbar { display: none; }
+body .co-story-tile {
+  position: relative;
+  flex: 0 0 clamp(108px, 12vw, 150px);
+  aspect-ratio: 9 / 15;
+  overflow: hidden;
+  border-radius: 20px;
+  border: 2px solid var(--co-burgundy);
+  background-size: cover;
+  background-position: center;
+  /* Meme duotone bordeaux que le reste des photos du site, applique directement
+     (le texte blanc du <span> n'est pas affecte visuellement par ce filtre). */
+  filter: grayscale(72%) sepia(18%) hue-rotate(300deg) saturate(1.9) contrast(1.08) brightness(.88);
+  transition: transform 260ms var(--co-ease-out), filter 400ms ease;
+}
+body .co-story-tile:hover { transform: translateY(-6px); filter: grayscale(10%) sepia(0%) saturate(1.05); }
+body .co-story-tile::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background: linear-gradient(0deg, rgba(4,10,22,.92) 0%, rgba(4,10,22,.1) 55%, transparent 75%);
+  pointer-events: none;
+}
+body .co-story-tile span {
+  position: absolute;
+  z-index: 1;
+  inset: auto 10px 12px;
+  color: var(--co-white);
+  font: 600 .78rem/1.15 var(--co-font-display);
+  letter-spacing: .01em;
+  text-wrap: balance;
+}
+
+/* ===================================================================
+   HEROS INTERIEURS (immersifs, photo + degrade signature)
+   =================================================================== */
+body main > .history-hero,
+body main > .academy-hero,
+body main > .senior-hero {
+  position: relative;
+  min-height: min(88svh, 880px);
+  display: flex;
+  align-items: flex-end;
+  padding: 160px 0 96px;
+  overflow: hidden;
+  /* Meme coupe en biais que le hero d'accueil, pour une silhouette coherente sur
+     tout le site plutot qu'un simple rectangle. */
+  clip-path: polygon(0 0, 100% 0, 100% 96%, 0 100%);
+  background-image:
+    linear-gradient(100deg, rgba(109,12,43,.86) 0%, rgba(45,10,26,.6) 42%, rgba(20,8,16,.22) 74%, rgba(10,6,12,.1) 100%),
+    linear-gradient(0deg, rgba(70,8,29,.82) 0%, transparent 52%),
+    var(--co-photo-action);
+  background-size: cover;
+  background-position: center;
+}
+body main > .senior-hero { background-image:
+    linear-gradient(100deg, rgba(109,12,43,.86) 0%, rgba(45,10,26,.6) 42%, rgba(20,8,16,.22) 74%, rgba(10,6,12,.1) 100%),
+    linear-gradient(0deg, rgba(70,8,29,.82) 0%, transparent 52%),
+    var(--co-photo-scrum);
+  background-size: cover; background-position: center 30%; }
+body main > .academy-hero { background-image:
+    linear-gradient(100deg, rgba(109,12,43,.86) 0%, rgba(45,10,26,.6) 42%, rgba(20,8,16,.22) 74%, rgba(10,6,12,.1) 100%),
+    linear-gradient(0deg, rgba(70,8,29,.82) 0%, transparent 52%),
+    var(--co-photo-youth);
+  background-size: cover; background-position: center 22%; }
+body main > .history-hero { background-image:
+    linear-gradient(100deg, rgba(109,12,43,.86) 0%, rgba(45,10,26,.62) 44%, rgba(20,8,16,.26) 76%, rgba(10,6,12,.12) 100%),
+    linear-gradient(0deg, rgba(70,8,29,.84) 0%, transparent 52%),
+    var(--co-photo-ball-sunset);
+  background-size: cover; background-position: center; }
+body main > .history-hero::before,
+body main > .academy-hero::before,
+body main > .senior-hero::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 88% 100%, rgba(7,26,55,.4), transparent 46%);
+  pointer-events: none;
+}
+body main > .history-hero::after,
+body main > .academy-hero::after,
+body main > .senior-hero::after {
+  content: "";
+  position: absolute;
+  right: -8%;
+  bottom: -48%;
+  width: 46%;
+  aspect-ratio: 1;
+  border-left: 12vw solid rgba(157,18,61,.3);
+  transform: rotate(20deg);
+  pointer-events: none;
+}
+body main > :is(.history-hero,.academy-hero,.senior-hero) h1 {
+  position: relative;
+  max-width: 960px;
+  font-family: var(--co-font-heavy);
+  font-size: var(--co-fs-h1);
+  font-weight: 400;
+  line-height: .92;
+  letter-spacing: 0;
+  text-transform: uppercase;
+  color: var(--co-white);
+  text-wrap: balance;
+}
+body main > :is(.history-hero,.academy-hero,.senior-hero) :is(p, .eyebrow) { position: relative; }
+
+/* ===================================================================
+   RYTHME DES SECTIONS
+   =================================================================== */
+body main > section:not(.co-home-hero) { scroll-margin-top: 90px; }
+body .news,
+body .section,
+body .cards-section,
+body .partners-section,
+body .gallery-section { padding-top: var(--co-space-section); padding-bottom: var(--co-space-section); }
+body .section-head h2,
+body main section > h2 {
+  font-family: var(--co-font-heavy);
+  font-size: var(--co-fs-h2);
+  font-weight: 400;
+  line-height: .96;
+  letter-spacing: 0;
+  text-transform: uppercase;
+  color: var(--co-ink);
+  text-wrap: balance;
+}
+body .section-head { margin-bottom: clamp(36px, 4.4vw, 64px); }
+body .news-grid,
+body .cards { gap: clamp(18px, 2.2vw, 30px); }
+
+/* ===================================================================
+   MODULE MATCH -- nouvelle presentation "scoreboard" (remplace les deux
+   cartes generiques identiques au reste du site : gros duel d'equipes +
+   compte a rebours en chiffres, panneau resultat distinct plus discret).
+   =================================================================== */
+body .match-preview-grid {
+  display: grid;
+  grid-template-columns: 1.6fr 1fr;
+  gap: clamp(18px, 2.2vw, 30px);
+  align-items: stretch;
+}
+body .match-hero-card {
+  position: relative;
+  overflow: hidden;
+  padding: clamp(30px, 3.6vw, 50px) clamp(26px, 3.6vw, 46px);
+  border: 1px solid rgba(255, 255, 255, .18);
+  border-radius: var(--co-radius);
+  background: linear-gradient(155deg, rgba(157, 18, 61, .38) 0%, rgba(4, 10, 22, .9) 62%);
+}
+body .match-hero-kicker {
+  display: inline-flex;
+  width: fit-content;
+  padding: 6px 16px;
+  margin: 0 0 22px;
+  border-radius: var(--co-radius-pill);
+  background: var(--co-burgundy);
+  color: var(--co-white);
+  font: 600 .7rem/1 var(--co-font-display);
+  letter-spacing: .12em;
+  text-transform: uppercase;
+}
+body .match-hero-teams {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: clamp(14px, 2vw, 26px);
+  margin-bottom: 20px;
+}
+body .match-hero-side {
+  font-family: var(--co-font-heavy);
+  font-size: clamp(1.6rem, 3.2vw, 2.9rem);
+  line-height: .92;
+  color: var(--co-white);
+  text-transform: uppercase;
+  text-wrap: balance;
+}
+body .match-hero-side--single { font-size: clamp(1.4rem, 2.4vw, 2.1rem); }
+body .match-hero-vs {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: var(--co-white);
+  color: var(--co-burgundy-deep);
+  font: 700 .76rem/1 var(--co-font-display);
+}
+body .match-hero-meta {
+  margin: 0 0 26px;
+  color: rgba(255, 255, 255, .72);
+  font-size: .96rem;
+}
+body .match-hero-card .countdown-units,
+body .match-hero-card .countdown-unit { all: revert; box-sizing: border-box; }
+body .match-hero-card .countdown-units { display: flex; gap: 12px; }
+body .match-hero-card .countdown-unit {
+  display: flex;
+  flex: 1;
+  min-width: 64px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 14px 8px;
+  border: 1px solid rgba(255, 255, 255, .16);
+  border-radius: var(--co-radius-sm);
+  background: rgba(255, 255, 255, .08);
+}
+body .match-hero-card .countdown-unit strong {
+  font-family: var(--co-font-heavy);
+  font-size: clamp(1.5rem, 2.4vw, 2.1rem);
+  line-height: 1;
+  color: var(--co-white);
+}
+body .match-hero-card .countdown-unit small {
+  margin-top: 6px;
+  color: rgba(255, 255, 255, .6);
+  font-size: .66rem;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+}
+body .match-hero-card .text-link {
+  display: inline-flex;
+  margin-top: 22px;
+  color: var(--co-white);
+  font: 600 .82rem/1 var(--co-font-display);
+  letter-spacing: .04em;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+
+body .match-result-strip {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: clamp(24px, 3vw, 36px);
+  border: 1px solid rgba(255, 255, 255, .16);
+  border-radius: var(--co-radius);
+  background: var(--co-card-navy);
+}
+body .match-result-kicker {
+  display: inline-flex;
+  width: fit-content;
+  padding: 5px 14px;
+  margin: 0 0 16px;
+  border-radius: var(--co-radius-pill);
+  background: rgba(255, 255, 255, .12);
+  color: var(--co-white);
+  font: 600 .68rem/1 var(--co-font-display);
+  letter-spacing: .1em;
+  text-transform: uppercase;
+}
+body .match-result-strip h3 {
+  margin: 0 0 12px;
+  font-family: var(--co-font-heavy);
+  font-size: clamp(1.25rem, 1.8vw, 1.6rem);
+  line-height: 1.05;
+  color: var(--co-white);
+  text-transform: uppercase;
+}
+body .match-result-strip p {
+  margin: 0;
+  color: rgba(255, 255, 255, .72);
+  font-size: .92rem;
+}
+body .match-result-strip .last-score-badge { margin: 10px 0; }
+@media (max-width: 760px) {
+  body .match-preview-grid { grid-template-columns: 1fr; }
+}
+
+/* Grille magazine : premiere actualite mise en avant (homepage uniquement) */
+body .news-grid:not(.news-list) {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-auto-rows: minmax(140px, auto);
+  align-items: stretch;
+}
+body .news-grid:not(.news-list) article:first-child {
+  grid-column: span 2;
+  grid-row: span 2;
+  display: grid;
+  grid-template-rows: minmax(260px, 1fr) auto;
+}
+body .news-grid:not(.news-list) article:first-child .news-image { min-height: 100%; }
+body .news-grid:not(.news-list) article:first-child h3 { font-size: clamp(1.7rem, 2.6vw, 2.5rem); }
+body .news-grid:not(.news-list) article:nth-child(2),
+body .news-grid:not(.news-list) article:nth-child(3) { display: grid; grid-template-rows: minmax(140px,1fr) auto; }
+
+/* ===================================================================
+   BOUTONS
+   =================================================================== */
+/* Pilules pleines/contour, a la maniere des CTA Castres/ASM/Stade -- rupture nette
+   avec les boutons quasi-carres (radius 3px) et le sweep-fill de l'ancienne refonte. */
+body .button {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  overflow: visible;
+  min-height: 56px;
+  padding-inline: 34px;
+  border-width: 2px;
+  border-radius: var(--co-radius-pill);
+  border-color: var(--co-burgundy);
+  color: var(--co-white);
+  background: var(--co-burgundy);
+  font-family: var(--co-font-display);
+  font-size: .86rem;
+  font-weight: 600;
+  letter-spacing: .07em;
+  text-transform: uppercase;
+  z-index: 0;
+  box-shadow: 0 14px 30px -12px rgba(157, 18, 61, .7);
+  transition: transform 220ms var(--co-ease-out), box-shadow 220ms ease, color 220ms ease,
+    border-color 220ms ease, background 220ms ease;
+}
+body .button::before { content: none; }
+body .button:hover {
+  color: var(--co-white);
+  background: var(--co-red);
+  border-color: var(--co-red);
+  transform: translateY(-3px);
+  box-shadow: 0 18px 36px -12px rgba(208, 23, 82, .8);
+}
+body .button.primary { border-color: var(--co-burgundy); background: var(--co-burgundy); color: var(--co-white); }
+body .button.primary:hover { background: var(--co-red); border-color: var(--co-red); }
+body .button.ghost {
+  background: transparent;
+  border-color: rgba(255, 255, 255, .55);
+  color: var(--co-white);
+  box-shadow: none;
+}
+body .button.ghost:hover {
+  background: var(--co-white);
+  border-color: var(--co-white);
+  color: var(--co-navy-deep);
+  box-shadow: 0 14px 30px -14px rgba(0, 0, 0, .5);
+}
+body .co-home-hero .button.ghost,
+body main > :is(.history-hero,.academy-hero,.senior-hero) .button.ghost {
+  border-color: rgba(255,255,255,.65);
+  background: rgba(6,10,18,.28);
+  color: var(--co-white);
+}
+body .co-home-hero .button.ghost:hover,
+body main > :is(.history-hero,.academy-hero,.senior-hero) .button.ghost:hover {
+  background: var(--co-white);
+  color: var(--co-navy-deep);
+}
+body .co-home-hero .button.primary,
+body .co-home-hero .button.primary:hover { color: var(--co-white); }
+body .co-home-hero .button.primary {
+  border-color: var(--co-burgundy);
+  background: var(--co-burgundy);
+}
+body .co-home-hero .button.primary::before { background: var(--co-red); }
+/* "Contact" est un lien de liste classique dans le mega-menu : pas de pastille bordeaux. */
+body .site-nav.v1-nav .nav-cta { border-radius: 0; background: transparent; }
+body .site-nav.v1-nav .nav-cta:hover { background: transparent; }
+
+/* ===================================================================
+   FAMILLES DE CARTES -> LANGAGE EDITORIAL CLAIR
+   =================================================================== */
+body :is(
+  .card, .news-grid article, .countdown-card, .last-result-card, .feature-list article,
+  .contact-panel, .contact-form, .map-panel, .project-lead, .project-callout, .project-card,
+  .partner-card, .gallery-album, .journal-card, .journal-feature, .news-empty-journal,
+  .notification-status-card, .notification-group, .notification-note,
+  .shop-intro, .shop-card, .team-hub-card, .club-identity-grid article,
+  .history-timeline-modern article, .history-values-grid article, .history-next-chapter,
+  .staff-card, .player-card, .calendar-card, .president-card, .club-signature-card,
+  .values-band article, .club-info article, .contact-details article,
+  .empty-state, .join-paths article, .history-milestones article, .bureau-card, .president-card, .vote-logo-card,
+  .vote-logo-intro, .vote-logo-closed, .vote-logo-form
+) {
+  background: var(--co-card);
+  border: 1px solid var(--co-card-line);
+  border-radius: var(--co-radius-sm);
+  color: var(--co-card-ink);
+  box-shadow: var(--co-shadow-md);
+  transition: transform 320ms var(--co-ease-out), box-shadow 320ms var(--co-ease-out), border-color 320ms ease;
+}
+/* Variante bleu marine : environ un quart des familles de cartes, pour l'alternance -- le bordeaux reste dominant */
+body :is(
+  .staff-card, .notification-status-card, .president-card, .bureau-card,
+  .club-info article, .team-hub-card
+) {
+  background: var(--co-card-navy);
+  border-color: rgba(255, 255, 255, .16);
+}
+body :is(
+  .card, .news-grid article, .countdown-card, .last-result-card, .feature-list article,
+  .contact-panel, .contact-form, .map-panel, .project-lead, .project-callout, .project-card,
+  .partner-card, .gallery-album, .journal-card, .journal-feature, .news-empty-journal,
+  .notification-status-card, .notification-group, .notification-note,
+  .shop-intro, .shop-card, .team-hub-card, .club-identity-grid article,
+  .history-timeline-modern article, .history-values-grid article, .history-next-chapter,
+  .staff-card, .player-card, .calendar-card, .president-card, .club-signature-card,
+  .values-band article, .club-info article, .contact-details article, .join-paths article,
+  .history-milestones article, .bureau-card, .president-card
+):hover {
+  transform: translateY(-6px);
+  border-color: rgba(157,18,61,.4);
+  box-shadow: var(--co-shadow-md);
+}
+body .news-grid article,
+body .card { overflow: hidden; }
+
+/* Etiquette de categorie en pastille (comme les tags ASM / le badge Castres) au lieu
+   d'un simple libelle en petites capitales -- pose sur la carte comme une puce. */
+body .news-grid article > span {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  padding: 5px 14px;
+  margin-bottom: 12px;
+  border-radius: var(--co-radius-pill);
+  background: rgba(255, 255, 255, .14);
+  color: var(--co-card-ink);
+  font: 600 .68rem/1 var(--co-font-display);
+  letter-spacing: .1em;
+  text-transform: uppercase;
+}
+body :is(.staff-card, .notification-status-card, .president-card, .bureau-card, .club-info article, .team-hub-card) span {
+  background: rgba(255, 255, 255, .12);
+}
+
+/* Traitement photo "duotone" bordeaux/marine -- signature graphique qui remplace
+   les photos en couleur naturelle par un rendu tres marque, desature et vire vers
+   le bordeaux. Revele progressivement sa couleur naturelle au survol. */
+body :is(.news-image, .gallery-cover, .shop-card img, .player-photo img, .team-gallery-item, .co-hero-media img) {
+  filter: grayscale(78%) sepia(22%) hue-rotate(300deg) saturate(2.1) contrast(1.08) brightness(.92);
+  transition: transform 650ms var(--co-ease-out), filter 650ms ease;
+}
+body .news-grid article:hover .news-image,
+body .gallery-album:hover .gallery-cover,
+body .shop-card:hover img,
+body .player-card:hover .player-photo img,
+body .team-gallery-item:hover {
+  filter: grayscale(20%) sepia(0%) hue-rotate(0deg) saturate(1.05) contrast(1.02) brightness(1);
+}
+body .news-grid article:hover .news-image,
+body .gallery-album:hover .gallery-cover,
+body .shop-card:hover img,
+body .player-card:hover .player-photo img,
+body .team-gallery-item:hover { transform: scale(1.055); }
+body .news-grid article,
+body .gallery-album,
+body .shop-card,
+body .player-photo,
+body .team-gallery-item { overflow: hidden; }
+
+body .academy-tabs a,
+body :is(.gallery-filters, .shop-filters, .calendar-filters, .journal-filters) button {
+  background: var(--co-card-alt);
+  border-color: var(--co-card-line);
+  color: var(--co-card-slate);
+  border-radius: 999px;
+  transition: transform 200ms var(--co-ease-out), background 200ms ease, border-color 200ms ease, color 200ms ease;
+}
+body .academy-tabs a:hover,
+body :is(.gallery-filters, .shop-filters, .calendar-filters, .journal-filters) button:hover,
+body :is(.gallery-filters, .shop-filters, .calendar-filters, .journal-filters) button.is-active,
+body .academy-tabs a.is-active { border-color: var(--co-burgundy); background: var(--co-burgundy); color: var(--co-white); transform: translateY(-1px); }
+
+/* Titres et libelles a l'interieur des cartes claires */
+body :is(
+  .player-info h3 strong, .staff-card span, .values-band strong, .club-info strong,
+  .contact-details strong, .social-links a, .history-card-content h3, .history-values-grid strong,
+  .club-signature-text strong, .shop-content h2, .shop-bottom strong, .journal-feature h2,
+  .journal-card h3, .news-empty-journal h3, .countdown-card.is-empty h3, .calendar-date strong,
+  .calendar-badge.upcoming, .team-gallery-item span, .club-info article strong
+) { color: var(--co-card-ink); }
+
+body .countdown-unit strong { color: var(--co-white); text-shadow: none; }
+body .countdown-card.is-empty h3 { color: var(--co-card-ink); }
+
+body .social-links a { border-color: var(--co-card-line); color: var(--co-card-ink); border-radius: var(--co-radius-sm); transition: border-color 200ms ease, color 200ms ease, transform 200ms var(--co-ease-out); }
+body .social-links a:hover { border-color: var(--co-white); color: var(--co-white); transform: translateY(-2px); }
+
+body :is(
+  .feature-list span, .card p, .news p, .contact-details p, .partner-card p, .player-info p,
+  .player-secondary-position, .project-card p, .shop-content p, .staff-card small,
+  .staff-contact, .timeline p, .values-band span, .club-info p, .academy-content p,
+  .history-intro p, .history-milestones span, .history-values-grid p, .gallery-info p,
+  .gallery-info span, .notification-note p, .notification-status-card p, .join-form label,
+  .vote-logo-card small, .vote-logo-consent, .vote-logo-fields label > span,
+  .vote-logo-status, .vote-logo-closed p, .vote-logo-intro p, .empty-state,
+  .club-identity-grid p, .countdown-card p, .last-result-card p, .countdown-units small,
+  .bureau-card p, .president-card p, .history-milestones span
+) { color: var(--co-card-slate); line-height: 1.65; }
+
+/* Magazine : le texte de previsualisation reste court, l'image et le titre portent la composition */
+body :is(
+  .card p, .news p, .journal-card p, .partner-card p, .project-card p,
+  .club-identity-grid p, .history-values-grid p, .gallery-info p, .shop-content p
+) {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+}
+
+body .vote-logo-fields label { color: var(--co-card-ink); }
+
+body .team-hub-content p { color: var(--co-card-slate); }
+body .team-hub-content dd { color: var(--co-card-ink); }
+body .team-hub-content dl div { background: rgba(255, 255, 255, .08); border-color: var(--co-card-line); border-radius: var(--co-radius-sm); }
+
+body .calendar-card.is-next { background: linear-gradient(135deg, rgba(157,18,61,.4), var(--co-card) 60%); }
+body .calendar-date span { color: var(--co-slate); }
+body .shop-intro p { color: var(--co-slate); }
+
+/* Photos avec degrade sombre : lisibilite conservee telle quelle */
+body .gallery-cover,
+body .team-gallery-item,
+body .gallery-lightbox { color: var(--co-white); }
+
+/* Badges et puces neutres */
+body .badge:not(.upcoming):not(.win):not(.loss) {
+  background: var(--co-card-alt);
+  color: var(--co-card-slate);
+  border: 1px solid var(--co-card-line);
+  border-radius: 999px;
+}
+body .last-score-badge:not(.win):not(.loss) {
+  background: var(--co-navy);
+  color: var(--co-white);
+  border-color: var(--co-navy);
+}
+body .calendar-badge:not(.match):not(.tournoi):not(.entrainement):not(.upcoming),
+body .calendar-result {
+  background: var(--co-card-alt);
+  border-color: var(--co-card-line);
+  color: var(--co-card-slate);
+}
+
+/* ===================================================================
+   ACTUALITES -- feature editoriale + panneau "brèves" (langage Castres Olympique)
+   =================================================================== */
+body .journal-feature-image,
+body .journal-image { background-color: var(--co-card-alt); }
+body .journal-meta span {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgba(157, 18, 61, .1);
+  color: var(--co-burgundy) !important;
+}
+body .journal-side {
+  position: relative;
+  display: grid;
+  gap: 16px;
+  padding: 22px 18px;
+  border-radius: var(--co-radius-sm);
+  background: var(--co-navy);
+}
+body .journal-side::before {
+  content: "Les brèves";
+  display: block;
+  padding-bottom: 12px;
+  border-bottom: 2px solid var(--co-burgundy);
+  color: var(--co-white);
+  font: 600 1.05rem/1.2 var(--co-font-display);
+  letter-spacing: .01em;
+}
+body .journal-side .journal-card-secondary { box-shadow: none; }
+body .journal-side .journal-card-secondary:hover { box-shadow: var(--co-shadow-sm); }
+body .journal-side .journal-meta span { background: rgba(255, 255, 255, .12); }
+
+/* ===================================================================
+   GALERIE -- fond marine plein cadre, mosaique brute
+   =================================================================== */
+body .gallery-page {
+  background: var(--co-navy-deep);
+  padding-top: clamp(64px, 7vw, 96px);
+  padding-bottom: clamp(96px, 10vw, 140px);
+}
+body .gallery-page .section-head h2 { color: var(--co-white); }
+body .gallery-page .gallery-filters button {
+  background: rgba(255, 255, 255, .06);
+  border-color: rgba(255, 255, 255, .18);
+  color: var(--co-white);
+}
+body .gallery-page .gallery-filters button:hover,
+body .gallery-page .gallery-filters button.is-active { background: var(--co-burgundy); border-color: var(--co-burgundy); color: var(--co-white); }
+body .gallery-grid { grid-template-columns: repeat(4, 1fr); grid-auto-rows: 190px; gap: 10px; }
+body .gallery-grid .gallery-album:nth-child(4n+1) { grid-column: span 2; grid-row: span 2; }
+body .gallery-album {
+  background: transparent;
+  border: 0;
+  border-radius: 14px;
+  box-shadow: none;
+}
+body .gallery-album:hover { box-shadow: 0 20px 46px rgba(0, 0, 0, .5); }
+body .gallery-cover { height: 100%; min-height: 100%; border-radius: 14px; }
+/* Le titre/la date restent accessibles, en legende revelee au survol (rien n'est retire) */
+body .gallery-album { position: relative; }
+body .gallery-info {
+  position: absolute;
+  inset: auto 0 0;
+  z-index: 2;
+  padding: 34px 16px 14px;
+  background: linear-gradient(0deg, rgba(4,10,22,.92), transparent);
+  opacity: 0;
+  transform: translateY(6px);
+  transition: opacity 260ms var(--co-ease-out), transform 260ms var(--co-ease-out);
+  pointer-events: none;
+}
+body .gallery-info span,
+body .gallery-info h3,
+body .gallery-info p { color: var(--co-white); }
+body .gallery-album:hover .gallery-info,
+body .gallery-album:focus-within .gallery-info { opacity: 1; transform: none; }
+
+/* ===================================================================
+   EQUIPES -- la photo devient le sujet, pas seulement le fond
+   =================================================================== */
+body .team-hub-visual {
+  background-image:
+    linear-gradient(180deg, rgba(4,10,22,.2) 0%, rgba(4,10,22,.86) 92%),
+    var(--co-photo-action);
+  background-size: cover;
+  background-position: center;
+}
+body .team-hub-academy .team-hub-visual { background-image: linear-gradient(180deg, rgba(4,10,22,.2) 0%, rgba(4,10,22,.86) 92%), var(--co-photo-youth); }
+body .team-hub-youth .team-hub-visual { background-image: linear-gradient(180deg, rgba(4,10,22,.2) 0%, rgba(4,10,22,.86) 92%), var(--co-photo-run); }
+body .team-hub-cadettes .team-hub-visual { background-image: linear-gradient(180deg, rgba(4,10,22,.2) 0%, rgba(4,10,22,.86) 92%), var(--co-photo-women); background-position: center 20%; }
+body .team-hub-senior .team-hub-visual { background-image: linear-gradient(180deg, rgba(4,10,22,.2) 0%, rgba(4,10,22,.86) 92%), var(--co-photo-scrum); }
+body .team-hub-visual:after { display: none; }
+body .team-hub-visual img { width: min(140px, 46%); filter: drop-shadow(0 12px 26px rgba(0,0,0,.6)) brightness(0) invert(1); opacity: .92; }
+
+/* Grilles plus aerees : moins de colonnes, cartes plus grandes */
+body .history-values-grid { grid-template-columns: repeat(3, minmax(0, 1fr)) !important; gap: clamp(18px, 2vw, 28px) !important; }
+body .cards { gap: clamp(20px, 2.4vw, 34px); }
+body .club-identity-grid { gap: clamp(20px, 2.4vw, 30px); }
+body .partner-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: clamp(20px, 2.4vw, 30px); }
+
+/* ===================================================================
+   TEXTURE -- grain discret sur certains blocs marine
+   =================================================================== */
+body :is(.home-match-preview, .split-section, .join-cta-band)::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background-image: var(--co-texture);
+  background-size: 5px 5px;
+  pointer-events: none;
+}
+body :is(.home-match-preview, .split-section, .join-cta-band) .page-shell { position: relative; z-index: 1; }
+
+/* ===================================================================
+   FORMULAIRES
+   =================================================================== */
+body :is(.join-form input, .join-form textarea, .join-form select,
+  .vote-logo-fields input, .vote-logo-fields select, .vote-logo-fields textarea) {
+  background: rgba(255, 255, 255, .07);
+  border-color: var(--co-hairline);
+  border-radius: var(--co-radius-sm);
+  color: var(--co-white);
+  transition: border-color 200ms ease, box-shadow 200ms ease, background 200ms ease;
+}
+body :is(.join-form input, .join-form textarea, .join-form select,
+  .vote-logo-fields input, .vote-logo-fields select, .vote-logo-fields textarea)::placeholder {
+  color: rgba(255, 255, 255, .45);
+}
+body :is(.join-form input, .join-form textarea, .join-form select):focus {
+  border-color: var(--co-burgundy);
+  box-shadow: 0 0 0 3px rgba(157,18,61,.12);
+}
+
+/* ===================================================================
+   BLOCS "ACCENT MARINE" VOLONTAIREMENT SOMBRES (rythme clair/fonce)
+   =================================================================== */
+body :is(.matches, .match, .stats, .split-section, .join, .join-cta-band, .important-news) {
+  background: linear-gradient(120deg, var(--co-burgundy) 0 62%, var(--co-navy) 62% 100%);
+  border-color: rgba(255,255,255,.14);
+  color: var(--co-white);
+}
+body .match { background: var(--co-burgundy-deep); border-bottom-color: rgba(255,255,255,.12); }
+body .match.highlighted { background: linear-gradient(90deg, rgba(208,23,82,.4), rgba(109,12,43,.96)); border-color: var(--co-red); }
+body :is(.matches, .match, .stats, .split-section, .join, .join-cta-band, .important-news) :is(h2, h3, strong, b) { color: var(--co-white); }
+body :is(.split-section p, .join p, .join-cta-inner p:not(.section-kicker), .match-date span, .venue, .competition, .teams b, .stat span) { color: #e7c3ce; }
+/* "vs" en pastille ronde pleine, comme les crests face-a-face des cartes de match
+   Castres/ASM (on n'a pas les blasons adverses, mais le chip rond porte la meme idee). */
+body .teams span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  margin: 0 10px;
+  border-radius: 50%;
+  background: var(--co-white);
+  color: var(--co-burgundy-deep) !important;
+  font: 700 .68rem/1 var(--co-font-display);
+  letter-spacing: .02em;
+  text-transform: uppercase;
+  vertical-align: middle;
+}
+body .badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 16px;
+  border-radius: var(--co-radius-pill);
+  letter-spacing: .06em;
+}
+
+body .split-section {
+  position: relative;
+  overflow: hidden;
+  background-image:
+    linear-gradient(120deg, rgba(109,12,43,.95) 0 60%, rgba(7,26,55,.6) 60% 100%),
+    var(--co-photo-run);
+  background-size: cover;
+  background-position: center 25%;
+}
+body .join-cta-band {
+  position: relative;
+  overflow: hidden;
+  background-image:
+    linear-gradient(115deg, rgba(109,12,43,.96) 0 62%, rgba(4,10,22,.7) 62% 100%),
+    var(--co-photo-huddle);
+  background-size: cover;
+  background-position: center 32%;
+}
+body .feature-list { background: rgba(255,255,255,.16); border: 1px solid rgba(255,255,255,.16); border-radius: var(--co-radius-sm); overflow: hidden; }
+body .feature-list article { background: rgba(255, 255, 255, .08); color: var(--co-white); box-shadow: none; border: 0; border-radius: 0; }
+body .feature-list article:hover { transform: none; box-shadow: none; }
+body .feature-list strong { color: var(--co-ink); }
+body .feature-list span { color: var(--co-slate); }
+
+body .home-match-preview {
+  position: relative;
+  overflow: hidden;
+  background-image:
+    linear-gradient(160deg, rgba(4,10,22,.95) 0%, rgba(4,10,22,.88) 55%, rgba(157,18,61,.42) 100%),
+    var(--co-photo-ball-rain);
+  background-size: cover;
+  background-position: center;
+}
+body .home-match-preview .section-kicker,
+body .home-match-preview .section-head h2 { color: var(--co-white); }
+body .home-match-preview .section-kicker { color: var(--co-red); }
+
+body .important-news { border-color: rgba(255,255,255,.18); border-radius: var(--co-radius-sm); }
+body .important-news strong { color: var(--co-white); }
+
+/* ===================================================================
+   HABILLAGE PAGES "CLUB / HISTOIRE"
+   =================================================================== */
+body .history-redesign {
+  background: radial-gradient(circle at 88% 12%, rgba(157,18,61,.06), transparent 34%),
+              radial-gradient(circle at 8% 54%, rgba(7,26,55,.03), transparent 28%),
+              var(--co-paper);
+}
+body .history-redesign .section-head h2,
+body .history-redesign h2 { color: var(--co-ink); }
+body .history-redesign .history-lead-text,
+body .history-redesign .history-section-head p { color: var(--co-slate); }
+
+/* ===================================================================
+   PIED DE PAGE
+   =================================================================== */
+body .rcc-footer {
+  position: relative;
+  overflow: hidden;
+  border-top: 0;
+  background: var(--co-navy-deep);
+  color: #b7c0d1;
+  /* Coin haut-gauche coupe en biais, comme le hero -- le pied de page reprend la
+     meme signature graphique plutot qu'un simple filet de separation. */
+  clip-path: polygon(0 3.5vw, 100% 0, 100% 100%, 0 100%);
+}
+body .rcc-footer::after {
+  content: "";
+  position: absolute;
+  z-index: 1;
+  inset: 0 0 auto;
+  height: 4px;
+  background: linear-gradient(90deg, var(--co-burgundy) 0%, var(--co-red) 50%, var(--co-burgundy) 100%);
+  clip-path: polygon(0 100%, 100% 0, 100% 6px, 0 6px);
+  pointer-events: none;
+}
+body .rcc-footer::before {
+  content: "";
+  position: absolute;
+  z-index: 0;
+  right: -12%;
+  top: -30%;
+  width: 46%;
+  aspect-ratio: 1;
+  border-left: 11vw solid rgba(157,18,61,.16);
+  transform: rotate(18deg);
+  pointer-events: none;
+}
+body .rcc-footer .page-shell { position: relative; z-index: 1; }
+body .rcc-footer :is(h3, .footer-brand strong) { color: var(--co-white); }
+body .rcc-footer .footer-brand strong { font-size: clamp(1.6rem, 2.4vw, 2.2rem); }
+body .rcc-footer a { color: #b7c0d1; transition: color 180ms ease; }
+body .rcc-footer a:hover { color: var(--co-white); }
+body .footer-main { width: var(--co-shell); padding-top: 68px; padding-bottom: 68px; }
+
+/* ===================================================================
+   REVELATION AU DEFILEMENT
+   =================================================================== */
+body [data-reveal] { opacity: 0; transform: translateY(22px); transition: opacity 560ms var(--co-ease-out), transform 560ms var(--co-ease-out); }
+body [data-reveal].is-visible { opacity: 1; transform: none; }
+body .news-grid [data-reveal]:nth-child(1) { transition-delay: 0ms; }
+body .news-grid [data-reveal]:nth-child(2) { transition-delay: 90ms; }
+body .news-grid [data-reveal]:nth-child(3) { transition-delay: 180ms; }
+body .cards [data-reveal]:nth-child(1), body .club-identity-grid [data-reveal]:nth-child(1) { transition-delay: 0ms; }
+body .cards [data-reveal]:nth-child(2), body .club-identity-grid [data-reveal]:nth-child(2) { transition-delay: 90ms; }
+body .cards [data-reveal]:nth-child(3), body .club-identity-grid [data-reveal]:nth-child(3) { transition-delay: 180ms; }
+
+/* ===================================================================
+   RESPONSIVE
+   =================================================================== */
+@media (max-width: 1080px) {
+  body .news-grid:not(.news-list) { grid-template-columns: repeat(2, 1fr); }
+  body .news-grid:not(.news-list) article:first-child { grid-column: span 2; grid-row: span 1; grid-template-rows: 320px auto; }
+}
+
+@media (max-width: 1080px) {
+  body .site-nav.v1-nav {
+    grid-template-columns: 1fr;
+    grid-template-rows: none;
+    gap: 30px;
+    padding-top: clamp(104px, 14vh, 140px);
+  }
+  body .site-nav.v1-nav > .nav-dropdown,
+  body .site-nav.v1-nav > a {
+    grid-column: auto !important;
+    grid-row: auto !important;
+    align-self: auto;
+  }
+  body .site-nav.v1-nav.is-open > a,
+  body .site-nav.v1-nav.is-open > .nav-dropdown { width: 100% !important; }
+  body .site-nav.v1-nav.is-open > a.admin-link { justify-self: start; width: fit-content !important; }
+}
+
+@media (max-width: 900px) {
+  :root { --co-shell: min(760px, calc(100% - 36px)); }
+  body .site-header { height: 70px; padding-inline: 18px; }
+  body .site-header .brand img { width: 46px; height: 46px; }
+  .co-home-hero { min-height: 92svh; }
+  .co-home-hero::before { background: linear-gradient(0deg, rgba(3,7,15,.95), rgba(3,7,15,.3) 78%); }
+  .co-hero-content { width: var(--co-shell); margin: 0 auto 62px; }
+  body main > .history-hero,
+  body main > .academy-hero,
+  body main > .senior-hero { min-height: 56svh; padding: 130px 0 56px; }
+  body .news-grid:not(.news-list) { grid-template-columns: 1fr; }
+  body .news-grid:not(.news-list) article:first-child { grid-column: auto; grid-row: auto; grid-template-rows: 260px auto; }
+}
+
+@media (max-width: 520px) {
+  :root { --co-shell: min(480px, calc(100% - 30px)); }
+  body .site-header { padding-inline: 12px; }
+  body .menu-toggle::after { display: none; }
+  body .site-nav.v1-nav { gap: 26px; padding-inline: 22px; }
+  .co-home-hero { min-height: 88svh; }
+  .co-hero-content { margin-bottom: 48px; }
+  .co-hero-summary { -webkit-line-clamp: 2; }
+  .co-hero-actions { align-items: stretch; flex-direction: column; width: min(100%, 310px); }
+  .co-hero-actions .button { width: 100%; }
+  body main > .history-hero,
+  body main > .academy-hero,
+  body main > .senior-hero { min-height: 48svh; padding: 116px 0 46px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  .co-hero-media img,
+  .co-hero-story,
+  body .button,
+  body .button::before,
+  body [data-reveal],
+  body :is(.news-image, .gallery-cover, .shop-card img, .player-photo img, .team-gallery-item) { transition: none !important; transform: none !important; animation: none !important; }
+  body [data-reveal] { opacity: 1; }
+}
+
+}
+
+@layer v3-design {
+
+:root{
+  --rcc-navy:#06142b;--rcc-navy-2:#0a2143;--rcc-burgundy:#8f1239;--rcc-red:#d51f52;
+  --rcc-cream:#f5f0e8;--rcc-white:#fff;--rcc-ink:#10141b;--rcc-muted:#aab2bf;
+  --rcc-line:rgba(255,255,255,.15);--rcc-shell:min(1480px,calc(100% - 64px));
+  --rcc-display:'Barlow Condensed',Impact,sans-serif;--rcc-text:'Inter',Arial,sans-serif;
+  --rcc-ease:cubic-bezier(.16,1,.3,1);
+}
+*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;overflow-x:hidden;background:var(--rcc-navy);color:var(--rcc-white);font-family:var(--rcc-text)}
+a{color:inherit;text-decoration:none}.page-shell{width:var(--rcc-shell);margin-inline:auto}.section-kicker{display:flex;align-items:center;gap:12px;margin:0 0 20px;color:var(--rcc-red);font:700 .78rem/1 var(--rcc-text);letter-spacing:.18em;text-transform:uppercase}.section-kicker:before{content:"";width:34px;height:2px;background:currentColor}h1,h2,h3,.text-link,.button,.nav-text-link,.nav-dropdown-main{font-family:var(--rcc-display)}
+
+/* HEADER */
+.site-header{position:fixed;z-index:1000;inset:0 0 auto;height:88px;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;padding:0 clamp(22px,3vw,52px);border-bottom:1px solid rgba(255,255,255,.13);background:linear-gradient(180deg,rgba(5,13,29,.88),rgba(5,13,29,.42));backdrop-filter:blur(14px);transition:.35s var(--rcc-ease)}
+.site-header.is-scrolled{height:70px;background:rgba(6,20,43,.96);box-shadow:0 16px 50px rgba(0,0,0,.25)}
+.brand{grid-column:2;display:block;z-index:1002}.brand img{width:64px;height:64px;object-fit:contain;filter:drop-shadow(0 10px 24px rgba(0,0,0,.35));transition:.3s var(--rcc-ease)}.site-header.is-scrolled .brand img{width:52px;height:52px}
+.menu-toggle{grid-column:1;justify-self:start;position:relative;z-index:1002;display:flex!important;align-items:center;gap:12px;width:auto!important;height:44px!important;padding:0!important;border:0!important;background:transparent!important;color:#fff!important;cursor:pointer}.menu-toggle span{position:absolute!important;left:0!important;width:24px!important;height:2px!important;margin:0!important;background:currentColor!important;transition:.3s var(--rcc-ease)}.menu-toggle span:first-child{top:15px}.menu-toggle span:nth-child(2){top:25px}.menu-toggle b{margin-left:38px;font:700 .76rem var(--rcc-text);letter-spacing:.16em;text-transform:uppercase}.menu-toggle[aria-expanded=true] span:first-child{top:20px;transform:rotate(45deg)}.menu-toggle[aria-expanded=true] span:nth-child(2){top:20px;transform:rotate(-45deg)}
+.header-quicklinks{grid-column:3;justify-self:end;display:flex;align-items:center;gap:28px;font:700 .75rem var(--rcc-text);letter-spacing:.11em;text-transform:uppercase}.header-quicklinks a:last-child{padding:12px 18px;border:1px solid rgba(255,255,255,.45);transition:.25s}.header-quicklinks a:hover{color:var(--rcc-red)}.header-quicklinks a:last-child:hover{border-color:var(--rcc-red);color:#fff;background:var(--rcc-burgundy)}
+
+/* FULLSCREEN NAV */
+.site-nav.v1-nav{position:fixed!important;z-index:999!important;inset:0!important;width:100%!important;height:100dvh!important;max-height:none!important;display:grid!important;grid-template-columns:1.2fr repeat(3,1fr)!important;align-content:center!important;gap:clamp(28px,4vw,72px)!important;padding:130px clamp(28px,6vw,96px) 70px!important;overflow:auto!important;background:radial-gradient(circle at 85% 15%,rgba(213,31,82,.26),transparent 32%),linear-gradient(135deg,#040c1c 0%,#071a37 55%,#34091c 130%)!important;opacity:0;visibility:hidden;pointer-events:none;transform:translateY(-18px);transition:opacity .35s var(--rcc-ease),transform .35s var(--rcc-ease),visibility 0s .35s!important}.site-nav.v1-nav.is-open{opacity:1;visibility:visible;pointer-events:auto;transform:none;transition-delay:0s!important}.nav-intro{grid-row:1/span 2;align-self:center;padding-right:30px;border-right:1px solid rgba(255,255,255,.18)}.nav-intro span{color:var(--rcc-red);font:700 .74rem var(--rcc-text);letter-spacing:.18em;text-transform:uppercase}.nav-intro strong{display:block;margin-top:28px;font:700 clamp(2.3rem,4vw,5rem)/.94 var(--rcc-display);text-transform:uppercase}
+.site-nav.v1-nav>.nav-dropdown,.site-nav.v1-nav>a{position:static!important;display:block!important;width:auto!important;height:auto!important;min-height:0!important;margin:0!important;padding:0!important;border:0!important;border-radius:0!important;background:none!important;box-shadow:none!important;color:#fff!important}.site-nav.v1-nav>.nav-dropdown{align-self:start}.site-nav.v1-nav>.nav-dropdown:nth-of-type(1){grid-column:2}.site-nav.v1-nav>.nav-text-link[href="./club.html"]{grid-column:3}.site-nav.v1-nav>.nav-dropdown:nth-of-type(2){grid-column:4}.site-nav.v1-nav .nav-dropdown-main,.site-nav.v1-nav>.nav-text-link{display:block!important;margin:0 0 24px!important;font:700 clamp(2rem,3vw,4rem)/1 var(--rcc-display)!important;letter-spacing:-.02em!important;text-transform:uppercase!important;white-space:normal!important;transition:.2s}.site-nav.v1-nav a:hover{color:var(--rcc-red)!important}.site-nav.v1-nav .nav-submenu{position:static!important;display:block!important;width:auto!important;height:auto!important;padding:0!important;opacity:1!important;visibility:visible!important;transform:none!important;pointer-events:auto!important;background:none!important}.site-nav.v1-nav .nav-submenu-panel{display:grid!important;gap:13px!important;padding:0!important;border:0!important;background:none!important;box-shadow:none!important}.site-nav.v1-nav .nav-submenu a{padding:0!important;border:0!important;background:none!important;color:rgba(255,255,255,.6)!important;font:500 1rem var(--rcc-text)!important;text-transform:none!important}.site-nav.v1-nav>.nav-text-link[href="./galerie.html"],.site-nav.v1-nav>.nav-text-link[href="./partenaires.html"],.site-nav.v1-nav>.nav-text-link[href="./boutique.html"],.site-nav.v1-nav>.nav-cta{grid-column:2/span 3!important;display:inline-block!important;width:fit-content!important;margin-right:28px!important;font:600 1.05rem var(--rcc-text)!important;text-transform:none!important}.site-nav.v1-nav>.nav-text-link[href="./galerie.html"]{grid-row:2}.site-nav.v1-nav>.nav-text-link[href="./partenaires.html"]{grid-row:2;margin-left:120px!important}.site-nav.v1-nav>.nav-text-link[href="./boutique.html"]{grid-row:2;margin-left:270px!important}.site-nav.v1-nav>.nav-cta{grid-row:2;margin-left:390px!important}.site-nav.v1-nav>.notification-link,.site-nav.v1-nav>.admin-link{position:absolute!important;bottom:38px!important;width:auto!important;height:auto!important;padding:0!important;border:0!important;background:none!important;font-size:20px!important}.site-nav.v1-nav>.notification-link{right:82px!important}.site-nav.v1-nav>.admin-link{right:42px!important}
+
+/* HERO */
+.co-home-hero{position:relative;min-height:100svh;display:flex;align-items:flex-end;overflow:hidden;isolation:isolate;background:#020711}.co-hero-media{position:absolute;z-index:-3;inset:0}.co-hero-media img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center;opacity:0;filter:saturate(.82) contrast(1.08);transform:scale(1.03);transition:opacity .8s var(--rcc-ease),transform 8s linear}.co-hero-media img.is-active{opacity:1;transform:scale(1.11)}.co-home-hero:before{content:"";position:absolute;z-index:-2;inset:0;background:linear-gradient(90deg,rgba(2,7,18,.98) 0%,rgba(2,7,18,.78) 42%,rgba(2,7,18,.12) 78%),linear-gradient(0deg,rgba(2,7,18,.96),transparent 58%),linear-gradient(135deg,rgba(143,18,57,.36),transparent 48%)}.co-home-hero:after{content:"";position:absolute;z-index:-1;right:-12vw;bottom:-26vw;width:58vw;aspect-ratio:1;border:10vw solid rgba(213,31,82,.23);transform:rotate(27deg)}.hero-noise{position:absolute;inset:0;pointer-events:none;opacity:.16;background-image:radial-gradient(rgba(255,255,255,.5) .6px,transparent .6px);background-size:5px 5px}.hero-season{position:absolute;top:50%;right:clamp(26px,4vw,70px);transform:rotate(90deg) translateX(50%);transform-origin:right top;color:rgba(255,255,255,.55);font:700 .72rem var(--rcc-text);letter-spacing:.28em;text-transform:uppercase}.co-hero-content{position:relative;width:min(980px,calc(100% - 96px));margin:0 0 clamp(84px,11vh,130px) max(48px,calc((100vw - 1480px)/2));z-index:2}.hero-clubline{margin:0 0 40px;color:#fff;font:800 .85rem var(--rcc-text);letter-spacing:.22em;text-transform:uppercase}.co-hero-meta{margin:0 0 18px;color:var(--rcc-red);font:700 .75rem var(--rcc-text);letter-spacing:.18em;text-transform:uppercase}.co-home-hero h1{max-width:1000px;margin:0;color:#fff;font:800 clamp(5rem,11vw,11.5rem)/.82 var(--rcc-display);letter-spacing:-.045em;text-transform:uppercase;text-wrap:balance}.co-hero-summary{max-width:660px;margin:30px 0 0;color:#d4d9e2;font-size:clamp(1rem,1.25vw,1.24rem);line-height:1.7}.co-hero-actions{display:flex;flex-wrap:wrap;gap:14px;margin-top:36px}.button{display:inline-flex;align-items:center;justify-content:center;min-height:58px;padding:0 28px;border:1px solid rgba(255,255,255,.5);background:transparent;color:#fff;font:700 .82rem var(--rcc-text);letter-spacing:.1em;text-transform:uppercase;transition:.25s var(--rcc-ease)}.button.primary{border-color:var(--rcc-red);background:var(--rcc-red)}.button:hover{transform:translateY(-3px);background:#fff;color:var(--rcc-navy);border-color:#fff}.co-hero-controls{display:flex;align-items:center;gap:14px;margin-top:26px}.co-hero-controls[hidden]{display:none}.co-hero-arrow{width:40px;height:40px;border:1px solid rgba(255,255,255,.38);border-radius:50%;background:rgba(0,0,0,.18);color:#fff}.co-hero-dots{display:flex;gap:7px}.co-hero-dot{width:26px;height:3px;border:0;background:rgba(255,255,255,.3)}.co-hero-dot[aria-current=true]{width:42px;background:var(--rcc-red)}.hero-scroll{position:absolute;right:clamp(30px,5vw,80px);bottom:34px;display:flex;align-items:center;gap:12px;color:rgba(255,255,255,.6);font:700 .7rem var(--rcc-text);letter-spacing:.14em;text-transform:uppercase}.hero-scroll span{display:block;width:48px;height:1px;background:currentColor}
+
+/* MARQUEE */
+.rcc-marquee{overflow:hidden;border-block:1px solid rgba(255,255,255,.12);background:var(--rcc-burgundy);color:#fff}.rcc-marquee div{display:flex;width:max-content;gap:24px;padding:16px 0;animation:marquee 24s linear infinite;font:800 1.1rem var(--rcc-display);letter-spacing:.13em;text-transform:uppercase}.rcc-marquee b{color:var(--rcc-navy)}@keyframes marquee{to{transform:translateX(-50%)}}
+
+/* EDITORIAL NEWS */
+.rcc-editorial{padding:clamp(100px,11vw,170px) 0;background:var(--rcc-cream);color:var(--rcc-ink)}.section-head{display:flex;align-items:flex-end;justify-content:space-between;gap:30px;margin-bottom:55px}.section-head h2{margin:0;font:800 clamp(4rem,8vw,8.6rem)/.82 var(--rcc-display);letter-spacing:-.04em;text-transform:uppercase}.text-link{display:inline-flex;align-items:center;gap:10px;padding-bottom:8px;border-bottom:1px solid currentColor;color:var(--rcc-burgundy);font:700 .82rem var(--rcc-text);letter-spacing:.09em;text-transform:uppercase}.text-link.light{color:#fff}.news-grid{display:grid!important;grid-template-columns:1.5fr 1fr 1fr!important;gap:18px!important}.news-grid article{position:relative;min-height:520px!important;padding:0!important;overflow:hidden;border:0!important;border-radius:0!important;background:#111!important;color:#fff!important;box-shadow:none!important}.news-grid article:first-child{grid-row:span 2!important;min-height:720px!important}.news-grid article .news-image{height:100%!important;min-height:100%!important;margin:0!important;position:absolute;inset:0;background-size:cover!important;background-position:center!important;transition:.7s var(--rcc-ease)}.news-grid article:after{content:"";position:absolute;inset:0;background:linear-gradient(0deg,rgba(3,8,18,.98) 0%,rgba(3,8,18,.12) 68%)}.news-grid article>*:not(.news-image){position:relative;z-index:2}.news-grid article h3,.news-grid article p,.news-grid article span{margin-left:28px;margin-right:28px}.news-grid article h3{margin-top:330px;margin-bottom:12px;font:700 clamp(1.8rem,2.6vw,3rem)/.96 var(--rcc-display);text-transform:uppercase}.news-grid article:first-child h3{margin-top:520px;font-size:clamp(2.5rem,4vw,4.8rem)}.news-grid article p{color:#d0d5dd!important;line-height:1.55}.news-grid article span{display:inline-block;margin-top:24px;color:var(--rcc-red)!important;font-weight:700;text-transform:uppercase}.news-grid article:hover .news-image{transform:scale(1.06)}
+
+/* MATCH ARENA */
+.match-arena{position:relative;padding:clamp(110px,12vw,190px) 0;overflow:hidden;background:#07162e}.match-arena-bg{position:absolute;inset:0;background:linear-gradient(90deg,rgba(6,20,43,.97),rgba(6,20,43,.8) 55%,rgba(6,20,43,.35)),url('./assets/uploads/FB_IMG_1784493770215.jpg') center/cover;filter:saturate(.7)}.match-arena:after{content:"RCC";position:absolute;right:-2vw;bottom:-10vw;color:rgba(255,255,255,.035);font:900 34vw/.8 var(--rcc-display)}.match-arena-inner{position:relative;z-index:2;display:grid;grid-template-columns:.8fr 1.2fr;gap:clamp(50px,8vw,130px);align-items:center}.match-arena-title h2{margin:0 0 34px;font:800 clamp(4.2rem,8vw,8.8rem)/.82 var(--rcc-display);text-transform:uppercase}.match-arena-title h2 em{color:var(--rcc-red);font-style:normal}.match-preview-grid{display:grid!important;grid-template-columns:1fr!important;gap:16px!important}.countdown-card,.last-result-card{min-height:250px!important;padding:34px!important;border:1px solid rgba(255,255,255,.16)!important;border-radius:0!important;background:rgba(5,13,29,.78)!important;color:#fff!important;box-shadow:none!important;backdrop-filter:blur(10px)}.countdown-card span,.last-result-card span{color:var(--rcc-red)!important;font:700 .72rem var(--rcc-text);letter-spacing:.14em;text-transform:uppercase}.countdown-card h3,.last-result-card h3{margin:20px 0 12px;font:700 clamp(2rem,4vw,4rem)/.95 var(--rcc-display);text-transform:uppercase}.countdown-card p,.last-result-card p{color:#c3cad6!important}
+
+/* SENIOR MANIFESTO */
+.team-manifesto{position:relative;min-height:900px;display:flex;align-items:center;overflow:hidden;background:var(--rcc-burgundy)}.team-manifesto-photo{position:absolute;inset:0 0 0 44%;background:linear-gradient(90deg,var(--rcc-burgundy),rgba(143,18,57,.42) 38%,rgba(143,18,57,.05)),url('./assets/uploads/FB_IMG_1784494043353.jpg') center/cover}.team-manifesto-content{position:relative;z-index:2}.team-manifesto-content>*{max-width:680px}.team-manifesto h2{margin:0;font:800 clamp(4.5rem,8vw,9rem)/.82 var(--rcc-display);text-transform:uppercase}.team-manifesto h2 span{color:var(--rcc-navy)}.team-manifesto p{font-size:1.1rem;line-height:1.7}.team-facts{display:flex;gap:44px;margin:48px 0}.team-facts div{display:flex;align-items:center;gap:12px}.team-facts strong{font:800 3.8rem/.8 var(--rcc-display)}.team-facts span{font-size:.72rem;letter-spacing:.08em;text-transform:uppercase}
+
+/* PATHWAYS */
+.pathways{padding:clamp(110px,12vw,190px) 0;background:var(--rcc-cream);color:var(--rcc-ink)}.pathways-head>p{max-width:480px;color:#586171;line-height:1.7}.pathway-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}.pathway-card{position:relative;min-height:640px;display:flex;flex-direction:column;justify-content:space-between;padding:28px;overflow:hidden;background:#111;color:#fff}.pathway-card:before{content:"";position:absolute;inset:0;background:linear-gradient(0deg,rgba(2,7,18,.97),rgba(2,7,18,.08) 70%),var(--bg) center/cover;transition:.7s var(--rcc-ease)}.pathway-school{--bg:url('./assets/uploads/FB_IMG_1784494694526.jpg')}.pathway-youth{--bg:url('./assets/uploads/FB_IMG_1784493960743.jpg')}.pathway-women{--bg:url('./assets/uploads/FB_IMG_1784494571502.jpg')}.pathway-card>*{position:relative;z-index:2}.pathway-card>span{font:700 1rem var(--rcc-display);color:var(--rcc-red)}.pathway-card small{font-weight:700;letter-spacing:.13em;text-transform:uppercase}.pathway-card h3{margin:10px 0 12px;font:800 clamp(2.4rem,4vw,4.6rem)/.9 var(--rcc-display);text-transform:uppercase}.pathway-card p{max-width:310px;color:#d1d6df;line-height:1.55}.pathway-card>b{position:absolute;right:26px;bottom:28px;font-size:2rem}.pathway-card:hover:before{transform:scale(1.06)}
+
+/* SIGNATURE + JOIN */
+.club-signature{position:relative;overflow:hidden;padding:clamp(100px,11vw,170px) 0;background:var(--rcc-navy);border-top:1px solid rgba(255,255,255,.1)}.club-signature-mark{position:absolute;right:-4vw;top:50%;transform:translateY(-50%);color:rgba(255,255,255,.035);font:900 28vw/.8 var(--rcc-display)}.club-signature-grid{position:relative;display:grid;grid-template-columns:1fr 1fr;gap:80px;align-items:end}.club-signature h2{margin:0;font:800 clamp(4.5rem,8vw,8rem)/.85 var(--rcc-display);text-transform:uppercase}.club-signature-grid>div:last-child{max-width:560px}.club-signature-grid p{color:#c1c9d6;line-height:1.8}.join-cta-band{position:relative;min-height:650px;display:flex;align-items:center;overflow:hidden;background:#020711}.join-cta-photo{position:absolute;inset:0;background:linear-gradient(90deg,rgba(2,7,18,.95),rgba(2,7,18,.3)),url('./assets/uploads/FB_IMG_1784493924968.jpg') center/cover}.join-cta-inner{position:relative;display:flex;align-items:center;justify-content:space-between;gap:50px}.join-cta-inner>div{max-width:740px}.join-cta-band h2{margin:0;font:800 clamp(5rem,10vw,10rem)/.82 var(--rcc-display);text-transform:uppercase}.join-cta-band p{max-width:620px;color:#d1d6df;line-height:1.7}.join-circle{flex:0 0 190px;width:190px;height:190px;border-radius:50%;display:grid;place-items:center;text-align:center;background:var(--rcc-red);font:800 1.4rem/1 var(--rcc-display);text-transform:uppercase;transition:.3s var(--rcc-ease)}.join-circle b{position:absolute;margin:95px 0 0 95px}.join-circle:hover{transform:rotate(-6deg) scale(1.05);background:#fff;color:var(--rcc-navy)}
+
+.site-footer{background:#030a18!important;color:#fff!important;border-top:1px solid rgba(255,255,255,.12)!important}
+
+@media(max-width:1080px){.header-quicklinks a:first-child{display:none}.site-nav.v1-nav{grid-template-columns:1fr 1fr!important;align-content:start!important}.nav-intro{grid-column:1/-1;grid-row:auto;border-right:0;border-bottom:1px solid rgba(255,255,255,.15);padding:0 0 30px}.site-nav.v1-nav>.nav-dropdown:nth-of-type(1),.site-nav.v1-nav>.nav-text-link[href="./club.html"],.site-nav.v1-nav>.nav-dropdown:nth-of-type(2){grid-column:auto!important}.site-nav.v1-nav>.nav-text-link[href="./galerie.html"],.site-nav.v1-nav>.nav-text-link[href="./partenaires.html"],.site-nav.v1-nav>.nav-text-link[href="./boutique.html"],.site-nav.v1-nav>.nav-cta{grid-column:auto!important;grid-row:auto!important;margin:0!important}.news-grid{grid-template-columns:1fr 1fr!important}.news-grid article:first-child{grid-column:1/-1!important}.match-arena-inner{grid-template-columns:1fr}.team-manifesto-photo{inset:0;opacity:.42}.pathway-grid{grid-template-columns:1fr}.pathway-card{min-height:500px}.club-signature-grid{grid-template-columns:1fr}.join-cta-inner{align-items:flex-end}.join-circle{flex-basis:150px;width:150px;height:150px}}
+@media(max-width:720px){:root{--rcc-shell:min(calc(100% - 28px),1480px)}.site-header{height:72px;padding:0 16px}.brand img{width:50px;height:50px}.header-quicklinks{display:none}.menu-toggle b{display:none}.site-nav.v1-nav{grid-template-columns:1fr!important;padding:100px 24px 40px!important}.nav-intro strong{font-size:2.7rem}.site-nav.v1-nav>.notification-link,.site-nav.v1-nav>.admin-link{bottom:20px!important}.co-hero-content{width:calc(100% - 32px);margin:0 16px 78px}.hero-clubline{margin-bottom:24px}.co-home-hero h1{font-size:clamp(4.2rem,22vw,7rem)}.co-hero-summary{font-size:.95rem}.hero-season,.hero-scroll{display:none}.section-head{align-items:flex-start;flex-direction:column}.news-grid{grid-template-columns:1fr!important}.news-grid article,.news-grid article:first-child{min-height:520px!important;grid-column:auto!important}.news-grid article h3,.news-grid article:first-child h3{margin-top:350px;font-size:2.5rem}.match-arena-title h2,.team-manifesto h2,.pathways h2,.club-signature h2,.join-cta-band h2{font-size:clamp(4rem,18vw,6rem)}.team-manifesto{min-height:760px}.team-facts{flex-direction:column;gap:20px}.pathway-card{min-height:460px}.join-cta-inner{display:block}.join-circle{margin-top:34px;width:130px;height:130px;font-size:1.1rem}}
+
+/* ===== Ajustements V3.1 : menu simplifié, typographie plus fine, accès équipes compact ===== */
+@media (min-width:1081px){
+  .site-nav.v1-nav{
+    grid-template-columns:minmax(240px,.75fr) repeat(3,minmax(170px,1fr))!important;
+    align-content:start!important;
+    gap:44px!important;
+    padding-top:clamp(128px,16vh,168px)!important;
+  }
+  .nav-intro{align-self:start;padding-right:34px}
+  .nav-intro strong{font-size:clamp(2.1rem,3vw,3.8rem);line-height:.98}
+  .site-nav.v1-nav .nav-dropdown-main,.site-nav.v1-nav>.nav-text-link{
+    font-size:clamp(1.65rem,2.1vw,2.7rem)!important;
+    margin-bottom:18px!important;
+  }
+  .site-nav.v1-nav .nav-submenu-panel{gap:10px!important}
+  .site-nav.v1-nav>.nav-text-link[href="./galerie.html"],
+  .site-nav.v1-nav>.nav-text-link[href="./partenaires.html"],
+  .site-nav.v1-nav>.nav-text-link[href="./boutique.html"],
+  .site-nav.v1-nav>.nav-cta{
+    position:static!important;grid-column:auto!important;grid-row:auto!important;
+    margin:18px 0 0!important;font-size:.98rem!important;
+  }
+  .site-nav.v1-nav>.nav-text-link[href="./galerie.html"]{grid-column:2!important}
+  .site-nav.v1-nav>.nav-text-link[href="./partenaires.html"]{grid-column:3!important}
+  .site-nav.v1-nav>.nav-text-link[href="./boutique.html"]{grid-column:4!important}
+  .site-nav.v1-nav>.nav-cta{grid-column:4!important;margin-top:58px!important}
+}
+
+.co-home-hero h1{max-width:820px;font-weight:600;font-size:clamp(4.2rem,8.2vw,8.6rem);line-height:.9;letter-spacing:-.025em}
+.section-head h2{font-weight:650;font-size:clamp(3rem,5.5vw,6.2rem);line-height:.9;letter-spacing:-.025em}
+.match-arena-title h2,.team-manifesto h2,.club-signature h2,.join-cta-band h2{font-weight:650;font-size:clamp(3.4rem,6vw,6.8rem);line-height:.9;letter-spacing:-.02em}
+.rcc-editorial,.match-arena,.club-signature{padding-top:clamp(76px,8vw,118px);padding-bottom:clamp(76px,8vw,118px)}
+.team-manifesto{min-height:720px}
+.join-cta-band{min-height:540px}
+
+.rcc-marquee div{gap:18px;padding:13px 0;font-size:.94rem;letter-spacing:.08em}
+.rcc-marquee span{color:#fff;font-weight:800}.rcc-marquee b{color:#ffd7e3;font-family:var(--rcc-text);font-size:.78rem;letter-spacing:.11em}.rcc-marquee i{color:var(--rcc-navy);font-style:normal}
+
+.club-access{padding:64px 0 76px;background:var(--rcc-navy)}
+.club-access-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:18px;max-width:1040px}
+.club-access-card{position:relative;min-height:312px;overflow:hidden;border:1px solid rgba(213,31,82,.42);border-radius:22px;background:#101826;color:#fff;isolation:isolate}
+.club-access-card:before{content:"";position:absolute;inset:0;z-index:-2;background:var(--access-photo) center/cover;filter:saturate(.72) contrast(1.03);transition:transform .55s var(--rcc-ease),filter .55s ease}
+.club-access-card:after{content:"";position:absolute;inset:0;z-index:-1;background:linear-gradient(0deg,rgba(5,9,18,.96) 0%,rgba(5,9,18,.12) 66%),linear-gradient(180deg,rgba(143,18,57,.1),transparent 40%)}
+.club-access-card span{position:absolute;left:16px;right:12px;bottom:16px;font:700 1.05rem/1 var(--rcc-display);text-transform:none;text-shadow:0 2px 10px rgba(0,0,0,.7)}
+.club-access-card:hover:before{transform:scale(1.06);filter:saturate(1) contrast(1.04)}
+.access-seniors{--access-photo:url('./assets/uploads/rcc-seniors-chevalier.png')}
+.access-school{--access-photo:url('./assets/uploads/rcc-ecole-enfant-ecuyer.png')}
+.access-youth{--access-photo:url('./assets/uploads/rcc-pole-jeunes-ecuyer.png')}
+.access-women{--access-photo:url('./assets/uploads/rcc-cadettes-ecuyere.png')}
+.access-gallery{--access-photo:url('./assets/uploads/FB_IMG_1784493770215.jpg')}
+
+@media(max-width:1080px){.club-access-grid{grid-template-columns:repeat(3,1fr);max-width:none}.club-access-card{min-height:300px}.site-nav.v1-nav>.nav-text-link[href="./galerie.html"],.site-nav.v1-nav>.nav-text-link[href="./partenaires.html"],.site-nav.v1-nav>.nav-text-link[href="./boutique.html"],.site-nav.v1-nav>.nav-cta{font-size:1rem!important}}
+@media(max-width:720px){
+  .co-home-hero h1{font-size:clamp(3.5rem,17vw,5.6rem);line-height:.9}
+  .section-head h2,.match-arena-title h2,.team-manifesto h2,.club-signature h2,.join-cta-band h2{font-size:clamp(3rem,14vw,4.8rem)}
+  .rcc-editorial,.match-arena,.club-signature{padding-top:64px;padding-bottom:64px}
+  .club-access{padding:36px 0 54px;overflow:hidden}
+  .club-access-grid{display:flex;gap:14px;overflow-x:auto;padding:0 2px 12px;scroll-snap-type:x mandatory;scrollbar-width:none}
+  .club-access-grid::-webkit-scrollbar{display:none}
+  .club-access-card{flex:0 0 178px;min-height:300px;scroll-snap-align:start;border-radius:20px}
+  .club-access-card span{font-size:1rem}
+  .team-manifesto{min-height:650px}.join-cta-band{min-height:500px}
+}
+
+/* ===== V3.2 : menu réellement ordonné + prochain match discret dans le hero ===== */
+.site-nav.v1-nav{
+  grid-template-columns:minmax(230px,.72fr) minmax(0,1.8fr)!important;
+  grid-template-rows:auto auto!important;
+  align-content:center!important;
+  column-gap:clamp(48px,6vw,100px)!important;
+  row-gap:42px!important;
+  padding:120px clamp(32px,6vw,96px) 54px!important;
+}
+.site-nav.v1-nav .nav-intro{
+  grid-column:1!important;
+  grid-row:1 / span 2!important;
+  align-self:center!important;
+  min-height:360px;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  padding-right:clamp(34px,4vw,72px)!important;
+  border-right:1px solid rgba(255,255,255,.18)!important;
+}
+.site-nav.v1-nav .nav-intro strong{
+  max-width:300px;
+  font-size:clamp(2.2rem,3.2vw,4rem)!important;
+  line-height:.96!important;
+}
+.site-nav.v1-nav .nav-main-grid{
+  grid-column:2;
+  grid-row:1;
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:clamp(34px,5vw,88px);
+  align-items:start;
+}
+.site-nav.v1-nav .nav-secondary{
+  grid-column:2;
+  grid-row:2;
+  display:flex;
+  flex-wrap:wrap;
+  gap:12px;
+  padding-top:28px;
+  border-top:1px solid rgba(255,255,255,.16);
+}
+.site-nav.v1-nav .nav-secondary>a{
+  display:inline-flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  min-height:46px!important;
+  width:auto!important;
+  margin:0!important;
+  padding:0 22px!important;
+  border:1px solid rgba(255,255,255,.19)!important;
+  border-radius:2px!important;
+  background:rgba(255,255,255,.035)!important;
+  color:#fff!important;
+  font:600 .9rem var(--rcc-text)!important;
+  text-transform:none!important;
+}
+.site-nav.v1-nav .nav-secondary>a:hover{
+  border-color:var(--rcc-red)!important;
+  background:rgba(213,31,82,.12)!important;
+}
+.site-nav.v1-nav .nav-utilities{
+  position:absolute;
+  right:clamp(28px,4vw,58px);
+  bottom:30px;
+  display:flex;
+  gap:18px;
+  align-items:center;
+}
+.site-nav.v1-nav .nav-utilities>a{
+  position:static!important;
+  display:inline-grid!important;
+  place-items:center!important;
+  width:42px!important;
+  height:42px!important;
+  margin:0!important;
+  padding:0!important;
+  border:1px solid rgba(255,255,255,.16)!important;
+  border-radius:50%!important;
+  background:rgba(255,255,255,.035)!important;
+  font-size:18px!important;
+}
+.site-nav.v1-nav .nav-main-grid .nav-dropdown{
+  display:block!important;
+  margin:0!important;
+  padding:0!important;
+}
+.site-nav.v1-nav .nav-main-grid .nav-dropdown-main{
+  margin:0 0 20px!important;
+  font-size:clamp(1.85rem,2.2vw,2.8rem)!important;
+}
+.site-nav.v1-nav .nav-main-grid .nav-submenu-panel{gap:12px!important}
+.site-nav.v1-nav .nav-main-grid .nav-submenu a{font-size:.98rem!important}
+
+.hero-next-match{
+  position:absolute;
+  z-index:3;
+  left:0;
+  right:0;
+  bottom:0;
+  min-height:92px;
+  display:grid;
+  grid-template-columns:auto minmax(0,1fr) auto;
+  align-items:center;
+  gap:28px;
+  padding:18px max(48px,calc((100vw - 1480px)/2));
+  border-top:1px solid rgba(255,255,255,.18);
+  background:linear-gradient(90deg,rgba(4,12,27,.72),rgba(4,12,27,.42));
+  backdrop-filter:blur(10px);
+}
+.hero-next-match-label{
+  color:var(--rcc-red);
+  font:700 .72rem var(--rcc-text);
+  letter-spacing:.16em;
+  text-transform:uppercase;
+  white-space:nowrap;
+}
+.hero-next-match-content{display:flex;align-items:baseline;gap:16px;min-width:0}
+.hero-next-match-content strong{
+  color:#fff;
+  font:650 clamp(1.2rem,1.7vw,1.8rem) var(--rcc-display);
+  text-transform:uppercase;
+  white-space:nowrap;
+}
+.hero-next-match-content span{
+  min-width:0;
+  overflow:hidden;
+  color:rgba(255,255,255,.72);
+  font-size:.88rem;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+.hero-next-match>a{
+  color:#fff;
+  font:700 .72rem var(--rcc-text);
+  letter-spacing:.08em;
+  text-transform:uppercase;
+  white-space:nowrap;
+}
+.co-hero-content{margin-bottom:clamp(150px,18vh,205px)!important}
+.hero-scroll{bottom:112px!important}
+
+@media(max-width:1080px){
+  .site-nav.v1-nav{grid-template-columns:1fr!important;grid-template-rows:auto!important;align-content:start!important;padding-top:110px!important}
+  .site-nav.v1-nav .nav-intro{grid-column:1!important;grid-row:auto!important;min-height:0;border-right:0!important;border-bottom:1px solid rgba(255,255,255,.16)!important;padding:0 0 28px!important}
+  .site-nav.v1-nav .nav-intro strong{max-width:none;font-size:2.7rem!important}
+  .site-nav.v1-nav .nav-main-grid{grid-column:1;grid-row:auto;grid-template-columns:repeat(3,1fr);gap:30px}
+  .site-nav.v1-nav .nav-secondary{grid-column:1;grid-row:auto}
+}
+@media(max-width:720px){
+  .site-nav.v1-nav .nav-main-grid{grid-template-columns:1fr;gap:28px}
+  .site-nav.v1-nav .nav-secondary{display:grid;grid-template-columns:1fr 1fr}
+  .site-nav.v1-nav .nav-secondary>a{width:100%!important;padding-inline:12px!important}
+  .site-nav.v1-nav .nav-utilities{position:static;grid-column:1;display:flex;margin-top:4px}
+  .hero-next-match{grid-template-columns:1fr auto;gap:8px 18px;min-height:86px;padding:14px 16px}
+  .hero-next-match-label{grid-column:1/-1}
+  .hero-next-match-content{display:block}
+  .hero-next-match-content strong{display:block;font-size:1.12rem}
+  .hero-next-match-content span{display:none}
+  .hero-next-match>a{font-size:.65rem}
+  .co-hero-content{margin-bottom:150px!important}
+  .hero-scroll{display:none!important}
+}
+
+
+/* ===== V3.3 : hero éditorial RCC + bandeau match/actus + accès équipes paysage ===== */
+.co-home-hero{
+  min-height:100svh;
+  align-items:flex-start;
+}
+.co-home-hero:before{
+  background:
+    linear-gradient(90deg,rgba(3,10,23,.92) 0%,rgba(3,10,23,.58) 42%,rgba(3,10,23,.15) 74%),
+    linear-gradient(0deg,rgba(3,10,23,.92) 0%,rgba(3,10,23,.22) 52%,rgba(3,10,23,.08) 100%),
+    linear-gradient(120deg,rgba(143,18,57,.40),transparent 46%);
+}
+.co-home-hero:after{
+  right:auto;
+  left:28%;
+  top:-34%;
+  bottom:auto;
+  width:28vw;
+  border:0;
+  height:135%;
+  aspect-ratio:auto;
+  background:linear-gradient(180deg,rgba(213,31,82,.40),rgba(143,18,57,.08));
+  transform:rotate(17deg);
+  opacity:.62;
+}
+.co-hero-content{
+  width:min(880px,calc(100% - 96px));
+  margin:max(170px,18vh) 0 250px max(52px,calc((100vw - 1480px)/2))!important;
+}
+.hero-clubline{margin-bottom:52px;font-weight:650;letter-spacing:.16em}
+.co-home-hero h1{
+  max-width:850px;
+  font-size:clamp(4rem,7.4vw,8.4rem);
+  font-weight:500;
+  line-height:.92;
+  letter-spacing:.015em;
+  font-style:italic;
+  text-shadow:3px 3px 0 rgba(213,31,82,.7);
+}
+.co-hero-summary{max-width:580px;font-size:1rem;line-height:1.62}
+.co-hero-actions{margin-top:30px}
+.hero-season{right:28px;opacity:.7}
+
+.hero-bottom-rail{
+  position:absolute;
+  z-index:4;
+  left:0;
+  right:0;
+  bottom:0;
+  min-height:162px;
+  display:grid;
+  grid-template-columns:minmax(360px,.95fr) minmax(0,1.05fr);
+  border-top:1px solid rgba(255,255,255,.22);
+  background:linear-gradient(90deg,rgba(5,15,33,.76),rgba(45,8,27,.60));
+  backdrop-filter:blur(9px);
+}
+.hero-match-teaser{
+  display:grid;
+  grid-template-columns:auto minmax(0,1fr) auto;
+  grid-template-rows:auto 1fr;
+  gap:10px 22px;
+  align-content:center;
+  min-width:0;
+  padding:26px max(34px,calc((100vw - 1480px)/2));
+  padding-right:42px;
+  border-right:1px solid rgba(255,255,255,.20);
+  transition:background .25s ease;
+}
+.hero-match-teaser:hover{background:rgba(143,18,57,.15)}
+.hero-rail-index{
+  grid-column:1/-1;
+  color:#fff;
+  font:700 .82rem var(--rcc-text);
+  letter-spacing:.08em;
+  text-transform:uppercase;
+}
+.hero-match-date{align-self:end;color:#fff;font:700 .88rem var(--rcc-text);white-space:nowrap}
+.hero-match-content{min-width:0;align-self:end}
+.hero-match-content strong{display:block;color:#fff;font:650 clamp(1.35rem,2vw,2rem)/1 var(--rcc-display);text-transform:uppercase}
+.hero-match-content span{display:block;margin-top:7px;overflow:hidden;color:rgba(255,255,255,.67);font-size:.82rem;text-overflow:ellipsis;white-space:nowrap}
+.hero-match-teaser>b{align-self:end;color:var(--rcc-red);font-size:1.3rem}
+.hero-news-rail{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));min-width:0}
+.hero-news-rail>a{display:flex;flex-direction:column;justify-content:center;gap:16px;min-width:0;padding:24px clamp(22px,2.4vw,42px);border-right:1px solid rgba(255,255,255,.12);transition:background .25s ease}
+.hero-news-rail>a:last-child{border-right:0}
+.hero-news-rail>a:hover{background:rgba(213,31,82,.10)}
+.hero-news-rail span{color:var(--rcc-red);font:700 .78rem var(--rcc-text);letter-spacing:.14em}
+.hero-news-rail strong{display:-webkit-box;overflow:hidden;color:#fff;font:600 clamp(.88rem,1.05vw,1.05rem)/1.45 var(--rcc-text);-webkit-box-orient:vertical;-webkit-line-clamp:2}
+
+/* Le gros bloc match de l'ancienne version n'est plus utilisé. */
+.match-arena{display:none!important}
+
+.club-access-landscape{padding:54px 0 70px;background:var(--rcc-navy)}
+.club-access-landscape .club-access-grid{
+  width:100%;
+  max-width:none;
+  display:grid;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:16px;
+}
+.club-access-landscape .club-access-card{
+  min-height:220px;
+  border-radius:14px;
+}
+.club-access-landscape .club-access-card:after{
+  background:linear-gradient(0deg,rgba(3,8,18,.95) 0%,rgba(3,8,18,.08) 72%),linear-gradient(90deg,rgba(143,18,57,.18),transparent 58%);
+}
+.club-access-landscape .club-access-card span{
+  left:22px;
+  bottom:24px;
+  font-size:clamp(1.3rem,1.7vw,2rem);
+  text-transform:uppercase;
+}
+.club-access-landscape .club-access-card b{
+  position:absolute;
+  z-index:2;
+  right:20px;
+  bottom:25px;
+  color:rgba(255,255,255,.66);
+  font:700 .67rem var(--rcc-text);
+  letter-spacing:.10em;
+  text-transform:uppercase;
+  opacity:0;
+  transform:translateX(-8px);
+  transition:.3s var(--rcc-ease);
+}
+.club-access-landscape .club-access-card:hover b{opacity:1;transform:none}
+.club-access-landscape .access-seniors{--access-photo:url('./assets/uploads/rcc-seniors-chevalier.png')}
+.club-access-landscape .access-school{--access-photo:url('./assets/uploads/rcc-ecole-enfant-ecuyer.png')}
+.club-access-landscape .access-youth{--access-photo:url('./assets/uploads/rcc-pole-jeunes-ecuyer.png')}
+.club-access-landscape .access-women{--access-photo:url('./assets/uploads/rcc-cadettes-ecuyere.png')}
+
+@media(max-width:1080px){
+  .hero-bottom-rail{grid-template-columns:1fr;position:relative;min-height:0;margin-top:auto}
+  .co-home-hero{display:flex;flex-direction:column;min-height:auto;padding-top:1px}
+  .co-hero-media{position:absolute}
+  .co-hero-content{margin:150px 32px 92px!important;width:min(760px,calc(100% - 64px))}
+  .hero-match-teaser{border-right:0;border-bottom:1px solid rgba(255,255,255,.18);padding:22px 32px}
+  .hero-news-rail{min-height:132px}
+  .club-access-landscape .club-access-grid{grid-template-columns:repeat(2,1fr)}
+}
+@media(max-width:720px){
+  .co-hero-content{margin:118px 16px 70px!important;width:calc(100% - 32px)}
+  .co-home-hero h1{font-size:clamp(3.4rem,16vw,5.5rem);text-shadow:2px 2px 0 rgba(213,31,82,.7)}
+  .hero-clubline{margin-bottom:30px}
+  .hero-bottom-rail{display:block}
+  .hero-match-teaser{grid-template-columns:1fr auto;padding:18px 16px}
+  .hero-match-date{grid-column:1/-1}
+  .hero-match-content span{display:none}
+  .hero-news-rail{display:flex;overflow-x:auto;scroll-snap-type:x mandatory}
+  .hero-news-rail>a{flex:0 0 78%;min-height:116px;scroll-snap-align:start}
+  .club-access-landscape{padding:34px 0 46px;overflow:hidden}
+  .club-access-landscape .club-access-grid{display:flex;overflow-x:auto;gap:12px;padding-bottom:8px;scroll-snap-type:x mandatory;scrollbar-width:none}
+  .club-access-landscape .club-access-grid::-webkit-scrollbar{display:none}
+  .club-access-landscape .club-access-card{flex:0 0 82%;min-height:190px;scroll-snap-align:center}
+  .club-access-landscape .club-access-card b{display:none}
+}
+
+
+/* ===== V3.5 : hero cinématique + cartes équipes vivantes ===== */
+.rcc-cinematic-slides img{
+  opacity:0!important;
+  transform:scale(1.035);
+  filter:saturate(.84) contrast(1.08) brightness(.88);
+  transition:opacity 1.65s ease-in-out,transform 11s linear!important;
+  will-change:opacity,transform;
+}
+.rcc-cinematic-slides img.is-active{
+  opacity:1!important;
+  transform:scale(1.105);
+}
+.co-home-hero:before{
+  background:
+    linear-gradient(90deg,rgba(2,7,18,.96) 0%,rgba(2,7,18,.72) 40%,rgba(2,7,18,.14) 76%),
+    linear-gradient(0deg,rgba(2,7,18,.96) 0%,rgba(2,7,18,.30) 48%,transparent 72%),
+    radial-gradient(circle at 16% 56%,rgba(143,18,57,.34),transparent 42%);
+}
+.co-home-hero h1{
+  font-weight:600!important;
+  letter-spacing:-.02em!important;
+  text-shadow:0 8px 34px rgba(0,0,0,.42),2px 2px 0 rgba(213,31,82,.55)!important;
+}
+.club-access-landscape .club-access-card{
+  position:relative;
+  min-height:clamp(190px,15vw,245px);
+  transform:translateZ(0);
+  transition:transform .48s var(--rcc-ease),border-color .35s ease,box-shadow .48s var(--rcc-ease);
+}
+.club-access-landscape .club-access-card:before{
+  transform:scale(1.01);
+  transition:transform .8s var(--rcc-ease),filter .55s ease;
+}
+.club-access-landscape .club-access-card:after{
+  transition:background .4s ease;
+}
+.club-access-landscape .club-access-card span:before{
+  content:"";
+  display:block;
+  width:34px;
+  height:3px;
+  margin-bottom:11px;
+  background:var(--rcc-red);
+  transform:scaleX(.65);
+  transform-origin:left;
+  transition:transform .4s var(--rcc-ease),width .4s var(--rcc-ease);
+}
+.club-access-landscape .club-access-card:hover{
+  transform:translateY(-7px) rotateX(.6deg);
+  border-color:rgba(213,31,82,.88);
+  box-shadow:0 24px 55px rgba(0,0,0,.32);
+}
+.club-access-landscape .club-access-card:hover:before{
+  transform:scale(1.095);
+  filter:saturate(1.08) contrast(1.05);
+}
+.club-access-landscape .club-access-card:hover:after{
+  background:linear-gradient(0deg,rgba(3,8,18,.97) 0%,rgba(143,18,57,.10) 72%),linear-gradient(90deg,rgba(143,18,57,.26),transparent 65%);
+}
+.club-access-landscape .club-access-card:hover span:before{
+  width:58px;
+  transform:scaleX(1);
+}
+.club-access-landscape .club-access-card span,
+.club-access-landscape .club-access-card b{
+  transition:transform .4s var(--rcc-ease),opacity .3s ease;
+}
+.club-access-landscape .club-access-card:hover span{transform:translateY(-4px)}
+
+@media (prefers-reduced-motion:reduce){
+  .rcc-cinematic-slides img{transition:none!important;transform:none!important}
+  .rcc-cinematic-slides img:not(.is-active){display:none}
+  .club-access-landscape .club-access-card,
+  .club-access-landscape .club-access-card:before{transition:none!important}
+}
+
+/* ===== V3.6.1 : correction du hero et harmonisation réelle des titres ===== */
+.brand.brand-logo-only img{
+  width:48px!important;
+  height:48px!important;
+  object-fit:contain;
+  opacity:.92;
+  filter:drop-shadow(0 7px 18px rgba(0,0,0,.34));
+}
+.site-header.is-scrolled .brand.brand-logo-only img{
+  width:40px!important;
+  height:40px!important;
+  opacity:1;
+}
+
+/* Le contenu principal du hero reste cliquable sans boutons redondants. */
+.co-hero-actions{display:none!important}
+
+/* Rétablissement du rail V3.5 : prochain match à gauche, actualités à droite. */
+.hero-bottom-rail{
+  display:grid!important;
+  grid-template-columns:minmax(330px,.95fr) minmax(0,1.85fr)!important;
+}
+.hero-match-teaser{display:grid!important}
+.hero-news-rail{grid-column:auto!important;width:auto!important}
+
+/* Tous les grands titres reprennent vraiment la signature du hero. */
+.co-home-hero h1,
+.section-head h2,
+.club-signature h2,
+.join-cta-band h2,
+.pathways h2,
+.match-arena-title h2{
+  font-family:var(--rcc-display)!important;
+  font-size:clamp(4rem,7.4vw,8.4rem)!important;
+  font-weight:600!important;
+  font-style:italic!important;
+  line-height:.92!important;
+  letter-spacing:-.02em!important;
+  text-transform:uppercase!important;
+}
+.co-home-hero h1,
+.club-signature h2,
+.join-cta-band h2,
+.match-arena-title h2{
+  color:#fff!important;
+  text-shadow:0 8px 34px rgba(0,0,0,.42),2px 2px 0 rgba(213,31,82,.55)!important;
+}
+.section-head h2,
+.pathways h2{
+  color:var(--rcc-ink)!important;
+  text-shadow:2px 2px 0 rgba(143,18,57,.22)!important;
+}
+
+/* L'ancien manifeste de l'équipe première reste supprimé. */
+.team-manifesto{display:none!important}
+
+@media(max-width:1080px){
+  .hero-bottom-rail{grid-template-columns:1fr!important;position:relative!important}
+  .hero-match-teaser{min-height:150px}
+  .hero-news-rail{grid-template-columns:repeat(3,1fr)!important}
+}
+
+@media(max-width:720px){
+  .brand.brand-logo-only img{width:42px!important;height:42px!important}
+  .co-home-hero h1,
+  .section-head h2,
+  .club-signature h2,
+  .join-cta-band h2,
+  .pathways h2,
+  .match-arena-title h2{
+    font-size:clamp(3.35rem,16vw,5.4rem)!important;
+    line-height:.92!important;
+  }
+  .hero-news-rail{grid-template-columns:1fr!important}
+}
+
+
+/* ===== V3.6.3 : rail du hero 3/4 prochain match, 1/4 actualité ===== */
+@media (min-width:1081px){
+  .hero-bottom-rail{
+    grid-template-columns:minmax(0,3fr) minmax(260px,1fr)!important;
+  }
+  .hero-news-rail{
+    display:grid!important;
+    grid-template-columns:1fr!important;
+  }
+  .hero-news-rail>a{
+    border-right:0!important;
+    padding-inline:clamp(24px,2.2vw,38px)!important;
+  }
+}
+
+/* ===================================================================
+   V2.1 — PAGES SPORTIVES + BANDEAU CMS
+   =================================================================== */
+
+/* Le bandeau ne contient que les titres des actualités importantes. */
+body .rcc-marquee[hidden] { display: none !important; }
+body .rcc-marquee > div {
+  align-items: center;
+  min-height: 54px;
+}
+body .rcc-marquee a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding-inline: 8px;
+  color: #fff;
+  font: 800 1rem/1.2 var(--rcc-display);
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+body .rcc-marquee a:hover,
+body .rcc-marquee a:focus-visible {
+  color: #ffe2eb;
+  text-decoration: underline;
+  text-underline-offset: 5px;
+}
+body .rcc-marquee i {
+  color: var(--rcc-navy);
+  font-style: normal;
+}
+body .rcc-marquee:hover > div,
+body .rcc-marquee:focus-within > div {
+  animation-play-state: paused;
+}
+
+/* Socle commun des quatre pages sportives. */
+body :is(.academy-page, .roster-page) {
+  width: var(--rcc-content);
+  margin-inline: auto;
+  padding-top: clamp(58px, 7vw, 96px);
+  padding-bottom: var(--rcc-section-space);
+}
+body .academy-page {
+  grid-auto-rows: 1fr;
+}
+body .academy-category {
+  display: grid;
+  grid-template-rows: auto 1fr;
+  min-height: 100%;
+  padding: 0;
+  border-radius: var(--rcc-radius-md);
+  background: linear-gradient(155deg, rgba(157, 18, 61, .98), rgba(49, 7, 24, .98));
+}
+body .academy-category .team-photo {
+  min-height: 280px;
+  margin: 0;
+  border-radius: 0;
+  background-color: var(--co-navy-deep);
+  background-position: center;
+  background-size: cover;
+}
+body .academy-category:nth-child(4n + 1) .team-photo {
+  background-image: linear-gradient(0deg, rgba(4,13,30,.72), rgba(4,13,30,.06)), var(--co-photo-youth);
+}
+body .academy-category:nth-child(4n + 2) .team-photo {
+  background-image: linear-gradient(0deg, rgba(4,13,30,.72), rgba(4,13,30,.06)), var(--co-photo-run);
+}
+body .academy-category:nth-child(4n + 3) .team-photo {
+  background-image: linear-gradient(0deg, rgba(4,13,30,.72), rgba(4,13,30,.06)), var(--co-photo-huddle);
+}
+body .academy-category:nth-child(4n + 4) .team-photo {
+  background-image: linear-gradient(0deg, rgba(4,13,30,.72), rgba(4,13,30,.06)), var(--co-photo-scrum);
+}
+body [data-category-page="feminines"] .academy-category .team-photo {
+  background-image: linear-gradient(0deg, rgba(4,13,30,.7), rgba(4,13,30,.04)), var(--co-photo-women);
+}
+body .academy-category .team-photo .team-line { display: none; }
+body .academy-category .team-photo > strong {
+  position: absolute;
+  z-index: 2;
+  inset: auto 24px 22px;
+  color: #fff;
+  font: 400 clamp(3.4rem, 6vw, 6.4rem)/.84 var(--co-font-heavy);
+  text-shadow: 0 8px 30px rgba(0, 0, 0, .45);
+}
+body .academy-category .academy-content {
+  display: flex;
+  flex-direction: column;
+  padding: clamp(24px, 3vw, 36px);
+}
+body .academy-category .academy-content > p:not(.section-kicker) {
+  min-height: 3.3em;
+  color: rgba(255, 255, 255, .76);
+  line-height: 1.65;
+}
+body .academy-category .academy-meta {
+  margin-top: auto;
+  padding-top: 18px;
+}
+body .academy-category .academy-content > h3 {
+  margin-top: 30px;
+  padding-top: 24px;
+  border-top: 1px solid rgba(255, 255, 255, .14);
+  color: #fff;
+  font-size: 1rem;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+}
+body .academy-category .staff-card {
+  min-height: 112px;
+  box-shadow: none;
+}
+
+/* Seniors : informations, staff et effectif suivent la même grille. */
+body .training-strip {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr auto;
+  align-items: center;
+  gap: 24px;
+  min-height: 116px;
+  margin-top: 56px;
+  padding: 26px clamp(24px, 4vw, 46px);
+  border: var(--rcc-border);
+  border-radius: var(--rcc-radius-md);
+  background:
+    radial-gradient(circle at 100% 0, rgba(208, 23, 82, .24), transparent 38%),
+    linear-gradient(145deg, rgba(7, 26, 55, .98), rgba(4, 13, 30, .98));
+  box-shadow: var(--rcc-shadow-card);
+}
+body .training-strip span {
+  color: #ff5b8d;
+  font-weight: 800;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+}
+body .training-strip strong {
+  color: #fff;
+  font-family: var(--co-font-heavy);
+  font-size: clamp(1.8rem, 3vw, 3.2rem);
+  font-weight: 400;
+  text-transform: uppercase;
+}
+body .training-strip b {
+  color: #fff;
+  font-size: clamp(1.5rem, 2.5vw, 2.5rem);
+}
+body .roster-group {
+  padding-block: clamp(48px, 6vw, 84px);
+}
+body .senior-staff-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
+}
+body .senior-staff-grid > .empty-state {
+  grid-column: 1 / -1;
+  width: 100%;
+}
+body .player-card {
+  overflow: hidden;
+  padding: 0;
+}
+body .player-card .player-photo {
+  min-height: 230px;
+  margin: 0;
+  border-radius: 0;
+}
+body .player-card .player-info {
+  padding: 22px;
+}
+
+@media (max-width: 820px) {
+  body .academy-category .team-photo { min-height: 230px; }
+  body .academy-category .academy-content { padding: 22px; }
+  body .academy-category .staff-grid { grid-template-columns: 1fr; }
+  body .training-strip {
+    grid-template-columns: 1fr auto;
+  }
+  body .training-strip span { grid-column: 1 / -1; }
+  body .senior-staff-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 620px) {
+  body :is(.academy-page, .roster-page) {
+    padding-top: 46px;
+  }
+  body .academy-category .team-photo { min-height: 220px; }
+  body .academy-category .academy-content > p:not(.section-kicker) { min-height: 0; }
+  body .training-strip {
+    grid-template-columns: 1fr;
+    gap: 8px;
+    margin-top: 36px;
+  }
+  body .training-strip span { grid-column: auto; }
+  body .senior-staff-grid { grid-template-columns: 1fr; }
+}
+
+/* ===================================================================
+   V2.2 — BANDEAU D'IDENTITÉ DES PAGES INTÉRIEURES
+   L'accueil conserve seul son hero cinématique.
+   =================================================================== */
+:root {
+  --rcc-hero-inner: clamp(240px, 19vw, 270px);
+}
+
+body main > :is(.history-hero, .academy-hero, .senior-hero),
+body main > .history-hero.matches-hero,
+body main > .academy-hero.academy-hero-compact,
+body main.club-page > .club-hero-compact {
+  min-height: var(--rcc-hero-inner) !important;
+  height: var(--rcc-hero-inner) !important;
+  padding: 96px 0 28px !important;
+  align-items: flex-end !important;
+  clip-path: none !important;
+}
+
+body main > :is(.history-hero, .academy-hero, .senior-hero)::before {
+  background:
+    linear-gradient(90deg, rgba(3, 8, 18, .94) 0%, rgba(72, 8, 30, .86) 52%, rgba(3, 8, 18, .55) 100%),
+    linear-gradient(0deg, rgba(3, 8, 18, .72), rgba(3, 8, 18, .08)) !important;
+}
+
+body main > :is(.history-hero, .academy-hero, .senior-hero)::after {
+  right: -5%;
+  bottom: -92%;
+  width: 34%;
+  opacity: .45;
+}
+
+body main > :is(.history-hero, .academy-hero, .senior-hero) > .page-shell,
+body main > :is(.history-hero, .academy-hero, .senior-hero) > div:not(.hero-art) {
+  align-self: flex-end !important;
+}
+
+body main > :is(.history-hero, .academy-hero, .senior-hero) .eyebrow {
+  margin: 0 0 8px;
+  font-size: .72rem;
+  line-height: 1.2;
+}
+
+body main > :is(.history-hero, .academy-hero, .senior-hero) h1,
+body main > .history-hero.matches-hero h1,
+body main.club-page > .club-hero-compact h1 {
+  max-width: 1100px;
+  margin: 0 0 8px !important;
+  font-size: clamp(3rem, 5.4vw, 5.4rem) !important;
+  line-height: .88 !important;
+  text-wrap: balance;
+}
+
+body main > :is(.history-hero, .academy-hero, .senior-hero) .inner-hero-copy {
+  display: -webkit-box !important;
+  max-width: 720px;
+  margin: 0 !important;
+  overflow: hidden;
+  color: rgba(255, 255, 255, .78);
+  font-size: clamp(.86rem, 1.05vw, 1rem);
+  line-height: 1.4;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+body main > :is(.history-hero, .academy-hero, .senior-hero) :is(.hero-actions, .academy-tabs) {
+  display: none !important;
+}
+
+/* Le contenu commence sans grande zone de transition après le bandeau. */
+body main :is(.actualites-page, .academy-page, .history-page, .project-content,
+  .gallery-page, .partners-page, .shop-page, .notifications-page, .contact-page,
+  .join-page, .roster-page, .vote-logo-content, .vote-logo-section,
+  .teams-hub-content, .teams-hub, .join-contact-page, .rcc-calendar-section) {
+  padding-top: clamp(38px, 4.5vw, 62px);
+}
+
+body .training-strip {
+  margin-top: clamp(34px, 4vw, 52px);
+}
+
+/* L'actualité individuelle utilise son en-tête dynamique comme bandeau compact. */
+body .article-page {
+  padding-top: 104px;
+}
+body .article-page .article-back {
+  margin-bottom: 12px;
+}
+body .article-page .article-header {
+  overflow: visible;
+  min-height: clamp(220px, 19vw, 270px);
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  padding: clamp(26px, 3.2vw, 42px);
+  background:
+    linear-gradient(90deg, rgba(3, 8, 18, .94), rgba(91, 10, 38, .84), rgba(3, 8, 18, .46)),
+    var(--co-photo-action) center 38% / cover;
+}
+body .article-page .article-header h1 {
+  margin: 10px 0 8px;
+  font-size: clamp(2.7rem, 5vw, 5rem);
+}
+body .article-page .article-header > p {
+  display: -webkit-box;
+  max-width: 720px;
+  margin: 0;
+  overflow: hidden;
+  font-size: .96rem;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+body .article-page .article-actions {
+  position: absolute;
+  left: clamp(26px, 3.2vw, 42px);
+  bottom: -58px;
+  display: flex;
+  margin: 0;
+}
+body .article-page .article-actions .button {
+  width: auto;
+  min-height: 44px;
+  padding-inline: 20px;
+  background: var(--co-navy-deep);
+}
+body .article-page .article-main-image {
+  margin-top: 80px;
+}
+
+@media (max-width: 820px) {
+  :root { --rcc-hero-inner: 220px; }
+
+  body main > :is(.history-hero, .academy-hero, .senior-hero),
+  body main > .history-hero.matches-hero,
+  body main > .academy-hero.academy-hero-compact,
+  body main.club-page > .club-hero-compact {
+    min-height: var(--rcc-hero-inner) !important;
+    height: var(--rcc-hero-inner) !important;
+    padding: 82px 0 22px !important;
+  }
+
+  body main > :is(.history-hero, .academy-hero, .senior-hero) h1,
+  body main > .history-hero.matches-hero h1,
+  body main.club-page > .club-hero-compact h1 {
+    font-size: clamp(2.65rem, 8.5vw, 4.2rem) !important;
+  }
+
+  body .article-page .article-header {
+    min-height: 220px;
+  }
+}
+
+@media (max-width: 620px) {
+  :root { --rcc-hero-inner: 200px; }
+
+  body main > :is(.history-hero, .academy-hero, .senior-hero),
+  body main > .history-hero.matches-hero,
+  body main > .academy-hero.academy-hero-compact,
+  body main.club-page > .club-hero-compact {
+    min-height: var(--rcc-hero-inner) !important;
+    height: var(--rcc-hero-inner) !important;
+    padding: 72px 0 18px !important;
+  }
+
+  body main > :is(.history-hero, .academy-hero, .senior-hero) h1,
+  body main > .history-hero.matches-hero h1,
+  body main.club-page > .club-hero-compact h1 {
+    margin-bottom: 5px !important;
+    font-size: clamp(2.25rem, 11.5vw, 3.45rem) !important;
+  }
+
+  body main > :is(.history-hero, .academy-hero, .senior-hero) .eyebrow {
+    margin-bottom: 5px;
+    font-size: .64rem;
+  }
+
+  body main > :is(.history-hero, .academy-hero, .senior-hero) .inner-hero-copy {
+    font-size: .78rem;
+    line-height: 1.3;
+    -webkit-line-clamp: 1;
+  }
+
+  body .article-page {
+    padding-top: 82px;
+  }
+  body .article-page .article-header {
+    min-height: 200px;
+    padding: 22px 18px;
+  }
+  body .article-page .article-header h1 {
+    font-size: clamp(2.2rem, 11vw, 3.35rem);
+  }
+  body .article-page .article-header > p {
+    font-size: .8rem;
+    line-height: 1.35;
+    -webkit-line-clamp: 1;
+  }
+  body .article-page .article-actions {
+    left: 18px;
+    bottom: -52px;
+    display: flex;
+    flex-wrap: nowrap;
+    gap: 7px;
+  }
+  body .article-page .article-actions .button {
+    width: auto;
+    min-height: 42px;
+    margin: 0;
+    padding-inline: 12px;
+    font-size: .66rem;
+  }
+  body .article-page .article-main-image {
+    margin-top: 72px;
+  }
+
+  body main :is(.actualites-page, .academy-page, .history-page, .project-content,
+    .gallery-page, .partners-page, .shop-page, .notifications-page, .contact-page,
+    .join-page, .roster-page, .vote-logo-content, .vote-logo-section,
+    .teams-hub-content, .teams-hub, .join-contact-page, .rcc-calendar-section) {
+    padding-top: 34px;
+  }
+}
+@media (max-width:1080px){
+  .hero-news-rail{grid-template-columns:1fr!important;}
+}
+
+}
+
+/* ===================================================================
+   CORRECTIFS POST-INTEGRATION V3.6.3
+   =================================================================== */
+@layer site-fixes {
+  /* L'ancien bouton menu generait "Menu"/"Fermer" via un ::after -- le nouveau
+     bouton porte desormais ce texte dans un vrai <b>Menu</b> du HTML. Les deux
+     se superposaient. On supprime le texte genere par l'ancienne couche. */
+  body .menu-toggle::after,
+  body .menu-toggle[aria-expanded="true"]::after {
+    content: none !important;
+  }
+
+  /* Logo : centrage fiable au milieu de l'en-tete. Le centrage par grille (colonne
+     "auto" du milieu) depend de la largeur du bouton menu et des liens rapides de
+     chaque cote pour rester symetrique -- pas fiable a toutes les tailles d'ecran.
+     On repasse en centrage absolu, insensible au contenu voisin. */
+  body .site-header .brand {
+    position: absolute !important;
+    left: 50% !important;
+    top: 50% !important;
+    grid-column: auto !important;
+    margin: 0 !important;
+    transform: translate(-50%, -50%) !important;
+  }
+}
+
+
+/* ===================================================================
+   CALENDRIER MENSUEL INTERACTIF RCC
+   =================================================================== */
+body .rcc-calendar-section{
+  padding:clamp(72px,8vw,118px) 0 clamp(90px,10vw,150px);
+  background:
+    radial-gradient(circle at 92% 8%,rgba(157,18,61,.22),transparent 32%),
+    linear-gradient(180deg,var(--co-navy-deep),#07162e);
+}
+body .rcc-calendar-toolbar{display:flex;align-items:flex-end;justify-content:space-between;gap:28px;margin-bottom:30px}
+body .rcc-calendar-toolbar h2{display:flex;align-items:baseline;flex-wrap:wrap;gap:.22em;margin:0;color:#fff;font-family:var(--co-font-heavy);font-weight:400;line-height:.95;text-transform:uppercase}
+body .rcc-calendar-month{font-size:clamp(2.15rem,4vw,4.4rem)}
+body .rcc-calendar-year{color:rgba(255,255,255,.56);font-family:var(--co-font-display);font-size:clamp(1rem,1.65vw,1.65rem);font-weight:600;letter-spacing:.08em}
+body .rcc-calendar-navigation{display:flex;align-items:center;gap:10px}
+body .rcc-calendar-navigation button{min-width:48px;height:48px;padding:0 18px;border:1px solid rgba(255,255,255,.2);border-radius:999px;background:rgba(255,255,255,.05);color:#fff;font-weight:700;cursor:pointer;transition:.2s ease}
+body .rcc-calendar-navigation button:hover{border-color:var(--co-red);background:var(--co-burgundy);transform:translateY(-2px)}
+body .rcc-calendar-filters{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:22px}
+body .rcc-calendar-filter{display:inline-flex;align-items:center;gap:9px;min-height:42px;padding:0 16px;border:1px solid rgba(255,255,255,.16);border-radius:999px;background:rgba(255,255,255,.04);color:#fff;font-size:.86rem;font-weight:700;cursor:pointer}
+body .rcc-calendar-filter::before{content:"";width:10px;height:10px;border-radius:50%;background:var(--category-color)}
+body .rcc-calendar-filter[aria-pressed="false"]{opacity:.42;filter:grayscale(1)}
+body .rcc-calendar-shell{overflow:hidden;border:1px solid rgba(255,255,255,.14);border-radius:22px;background:rgba(3,9,20,.68);box-shadow:0 30px 80px rgba(0,0,0,.24);backdrop-filter:blur(12px)}
+body .rcc-calendar-weekdays,body .rcc-calendar-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr))}
+body .rcc-calendar-weekdays{border-bottom:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.035)}
+body .rcc-calendar-weekdays span{padding:14px 10px;color:rgba(255,255,255,.58);font:700 .72rem var(--co-font-text);letter-spacing:.13em;text-align:center;text-transform:uppercase}
+body .rcc-calendar-grid>.empty-state{grid-column:1/-1;padding:50px;text-align:center}
+body .rcc-calendar-day{position:relative;min-height:142px;padding:13px 10px 10px;border-right:1px solid rgba(255,255,255,.08);border-bottom:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.012);transition:background .2s ease}
+body .rcc-calendar-day:nth-child(7n){border-right:0}
+body .rcc-calendar-day:hover{background:rgba(255,255,255,.045)}
+body .rcc-calendar-day.is-outside{opacity:.3}
+body .rcc-calendar-day.is-today::after{content:"";position:absolute;inset:5px;border:1px solid var(--co-red);border-radius:12px;pointer-events:none}
+body .rcc-calendar-date{position:relative;z-index:1;display:grid;width:30px;height:30px;place-items:center;margin-bottom:8px;border-radius:50%;color:#fff;font-weight:800}
+body .rcc-calendar-day.is-today .rcc-calendar-date{background:var(--co-red)}
+body .rcc-calendar-day-events{position:relative;z-index:1;display:grid;gap:6px}
+body .rcc-calendar-event{display:block;width:100%;min-width:0;padding:7px 8px;border:0;border-left:4px solid var(--category-color);border-radius:7px;background:color-mix(in srgb,var(--category-color) 18%,rgba(255,255,255,.04));color:#fff;text-align:left;cursor:pointer}
+body .rcc-calendar-event strong{display:block;overflow:hidden;font-size:.78rem;line-height:1.2;text-overflow:ellipsis;white-space:nowrap}
+body .rcc-calendar-event small{display:block;margin-top:3px;color:rgba(255,255,255,.66);font-size:.68rem}
+body .rcc-calendar-more{padding:3px 5px;color:rgba(255,255,255,.55);font-size:.7rem}
+body .rcc-calendar-mobile{display:none}
+body .rcc-event-dialog{width:min(560px,calc(100% - 28px));padding:0;border:1px solid rgba(255,255,255,.18);border-radius:22px;background:linear-gradient(145deg,#071a37,#160817);color:#fff;box-shadow:0 40px 100px rgba(0,0,0,.55)}
+body .rcc-event-dialog::backdrop{background:rgba(0,0,0,.72);backdrop-filter:blur(6px)}
+body .rcc-event-dialog-close{position:absolute;z-index:2;top:16px;right:16px;width:42px;height:42px;border:1px solid rgba(255,255,255,.2);border-radius:50%;background:rgba(255,255,255,.06);color:#fff;font-size:1.5rem;cursor:pointer}
+body .rcc-event-detail{padding:40px}
+body .rcc-event-detail-category{display:inline-flex;align-items:center;gap:8px;margin-bottom:20px;color:var(--category-color);font-weight:800;letter-spacing:.12em;text-transform:uppercase}
+body .rcc-event-detail-category::before{content:"";width:11px;height:11px;border-radius:50%;background:currentColor}
+body .rcc-event-detail h3{max-width:430px;margin:0 0 26px;font-family:var(--co-font-heavy);font-size:clamp(2.5rem,7vw,4.8rem);font-weight:400;line-height:.9;text-transform:uppercase}
+body .rcc-event-detail-list{display:grid;gap:0;margin:0}
+body .rcc-event-detail-list div{display:grid;grid-template-columns:120px 1fr;gap:18px;padding:14px 0;border-top:1px solid rgba(255,255,255,.11)}
+body .rcc-event-detail-list dt{color:rgba(255,255,255,.5);font-size:.76rem;font-weight:800;letter-spacing:.1em;text-transform:uppercase}
+body .rcc-event-detail-list dd{margin:0;color:#fff;font-weight:600}
+body .rcc-event-detail-description{margin:24px 0 0;color:rgba(255,255,255,.72);line-height:1.65}
+
+@media(max-width:760px){
+  body .rcc-calendar-toolbar{align-items:flex-start;flex-direction:column}
+  body .rcc-calendar-navigation{width:100%;justify-content:space-between}
+  body .rcc-calendar-navigation button:nth-child(2){flex:1}
+  body .rcc-calendar-shell{display:none}
+  body .rcc-calendar-mobile{display:grid;gap:12px}
+  body .rcc-mobile-day{display:grid;grid-template-columns:54px 1fr;gap:12px;padding:14px;border:1px solid rgba(255,255,255,.12);border-radius:16px;background:rgba(255,255,255,.035)}
+  body .rcc-mobile-day-date{font-family:var(--co-font-heavy);font-size:2rem;line-height:1;color:#fff;text-align:center}
+  body .rcc-mobile-day-date small{display:block;margin-top:5px;color:rgba(255,255,255,.46);font:700 .65rem var(--co-font-text);letter-spacing:.08em;text-transform:uppercase}
+  body .rcc-mobile-events{display:grid;gap:8px}
+  body .rcc-mobile-event{padding:12px;border:0;border-left:4px solid var(--category-color);border-radius:10px;background:color-mix(in srgb,var(--category-color) 16%,rgba(255,255,255,.04));color:#fff;text-align:left}
+  body .rcc-mobile-event strong,body .rcc-mobile-event small{display:block}
+  body .rcc-mobile-event small{margin-top:4px;color:rgba(255,255,255,.62)}
+  body .rcc-event-detail{padding:34px 24px 26px}
+  body .rcc-event-detail-list div{grid-template-columns:1fr;gap:5px}
+}
+
+/* ===== Calendrier : hero compact pour afficher le mois sans défilement ===== */
+body main > .history-hero.matches-hero {
+  min-height: clamp(360px, 42vh, 460px) !important;
+  padding-top: 118px !important;
+  padding-bottom: 52px !important;
+  clip-path: polygon(0 0, 100% 0, 100% 94%, 0 100%);
+}
+
+body main > .history-hero.matches-hero .history-hero-content {
+  align-self: flex-end;
+}
+
+body main > .history-hero.matches-hero h1 {
+  margin-bottom: 18px;
+}
+
+body main > .history-hero.matches-hero .inner-hero-copy {
+  margin-bottom: 0;
+}
+
+@media (max-width: 900px) {
+  body main > .history-hero.matches-hero {
+    min-height: 360px !important;
+    padding-top: 104px !important;
+    padding-bottom: 44px !important;
+  }
+}
+
+@media (max-width: 520px) {
+  body main > .history-hero.matches-hero {
+    min-height: 310px !important;
+    padding-top: 92px !important;
+    padding-bottom: 38px !important;
+  }
+}
+
+
+/* ===================================================================
+   PAGE CLUB — HERO COMPACT + REFONTE EDITORIALE
+   =================================================================== */
+body .club-page .club-hero-compact {
+  min-height: clamp(360px, 42vh, 460px) !important;
+  padding-top: 118px !important;
+  padding-bottom: 52px !important;
+  clip-path: polygon(0 0, 100% 0, 100% 94%, 0 100%);
+}
+body .club-page .club-hero-compact .history-hero-content { align-self: flex-end; }
+body .club-page .club-hero-compact h1 {
+  margin: 0 0 14px;
+  font-size: clamp(4rem, 8vw, 8rem);
+  line-height: .88;
+}
+body .club-page .club-hero-compact h1 span,
+body .club-page .club-hero-compact h1 strong { display: inline; }
+body .club-page .club-hero-compact .inner-hero-copy {
+  max-width: 680px;
+  margin-bottom: 0;
+}
+
+body .club-redesign {
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 96% 24%, rgba(157,18,61,.13), transparent 28%),
+    var(--co-navy-deep);
+}
+body .club-redesign h2 {
+  margin: 0;
+  color: #fff;
+  font-family: var(--co-font-heavy);
+  font-size: clamp(2.8rem, 5.4vw, 5.8rem);
+  font-weight: 400;
+  line-height: .92;
+  text-transform: uppercase;
+}
+body .club-redesign h3 { color: #fff; }
+body .club-redesign p { color: rgba(255,255,255,.7); line-height: 1.7; }
+
+body .club-intro {
+  display: grid;
+  grid-template-columns: minmax(0,1.25fr) minmax(320px,.75fr);
+  gap: clamp(48px,7vw,110px);
+  align-items: center;
+  padding-top: clamp(74px,8vw,124px);
+  padding-bottom: clamp(74px,8vw,124px);
+}
+body .club-intro-copy { max-width: 760px; }
+body .club-intro-copy h2 { margin: 16px 0 28px; }
+body .club-lead {
+  color: #fff !important;
+  font-size: clamp(1.16rem,1.6vw,1.45rem);
+  font-weight: 600;
+}
+body .club-intro-actions { display:flex; flex-wrap:wrap; gap:12px; margin-top:34px; }
+body .club-key-figures {
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  border:1px solid rgba(255,255,255,.13);
+  border-radius:24px;
+  overflow:hidden;
+  background:rgba(255,255,255,.025);
+}
+body .club-key-figures article {
+  min-height:170px;
+  display:flex;
+  flex-direction:column;
+  justify-content:flex-end;
+  padding:26px;
+  border-right:1px solid rgba(255,255,255,.1);
+  border-bottom:1px solid rgba(255,255,255,.1);
+}
+body .club-key-figures article:nth-child(2n){border-right:0}
+body .club-key-figures article:nth-last-child(-n+2){border-bottom:0}
+body .club-key-figures strong {
+  color:var(--co-red);
+  font-family:var(--co-font-heavy);
+  font-size:clamp(2.8rem,5vw,5rem);
+  font-weight:400;
+  line-height:.9;
+}
+body .club-key-figures span {
+  margin-top:12px;
+  color:#fff;
+  font-size:.78rem;
+  font-weight:800;
+  letter-spacing:.08em;
+  text-transform:uppercase;
+}
+
+body .club-pillars {
+  padding:clamp(82px,9vw,140px) 0;
+  background:
+    linear-gradient(105deg,rgba(4,13,30,.98),rgba(11,24,48,.9)),
+    var(--co-photo-huddle) center/cover;
+}
+body .club-section-heading {
+  display:grid;
+  grid-template-columns:minmax(0,1.25fr) minmax(280px,.75fr);
+  gap:40px;
+  align-items:end;
+  margin-bottom:44px;
+}
+body .club-section-heading h2 { margin-top:14px; }
+body .club-section-heading > p { margin:0; max-width:520px; justify-self:end; }
+body .club-pillars-grid {
+  display:grid;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:1px;
+  overflow:hidden;
+  border:1px solid rgba(255,255,255,.14);
+  border-radius:24px;
+  background:rgba(255,255,255,.12);
+}
+body .club-pillar {
+  position:relative;
+  min-height:440px;
+  display:flex;
+  flex-direction:column;
+  justify-content:space-between;
+  padding:28px;
+  overflow:hidden;
+  isolation:isolate;
+  color:#fff;
+  background-position:center;
+  background-size:cover;
+}
+body .club-pillar::before {
+  content:"";
+  position:absolute;
+  z-index:-1;
+  inset:0;
+  background:linear-gradient(180deg,rgba(4,10,22,.28),rgba(4,10,22,.96));
+}
+body .club-pillar::after {
+  content:"";
+  position:absolute;
+  z-index:-1;
+  inset:0;
+  background:linear-gradient(145deg,rgba(157,18,61,.3),transparent 50%);
+  opacity:.7;
+  transition:opacity .25s ease;
+}
+body .club-pillar:hover::after { opacity:1; }
+body .club-pillar:hover { transform:none; }
+body .club-pillar-school{background-image:var(--co-photo-youth)}
+body .club-pillar-youth{background-image:var(--co-photo-run)}
+body .club-pillar-cadettes{background-image:var(--co-photo-women)}
+body .club-pillar-seniors{background-image:var(--co-photo-action)}
+body .club-pillar-number {
+  color:rgba(255,255,255,.46);
+  font-family:var(--co-font-heavy);
+  font-size:2rem;
+}
+body .club-pillar small {
+  color:var(--co-red);
+  font-weight:800;
+  letter-spacing:.11em;
+  text-transform:uppercase;
+}
+body .club-pillar h3 {
+  margin:10px 0 12px;
+  font-family:var(--co-font-heavy);
+  font-size:clamp(2.1rem,3vw,3.4rem);
+  font-weight:400;
+  line-height:.9;
+  text-transform:uppercase;
+}
+body .club-pillar p { margin:0; color:rgba(255,255,255,.7); }
+
+body .club-values {
+  padding-top:clamp(88px,10vw,150px);
+  padding-bottom:clamp(88px,10vw,150px);
+}
+body .club-values-grid {
+  display:grid;
+  grid-template-columns:repeat(5,minmax(0,1fr));
+  border-top:1px solid rgba(255,255,255,.14);
+  border-bottom:1px solid rgba(255,255,255,.14);
+}
+body .club-values-grid article {
+  min-height:280px;
+  padding:30px 24px;
+  border-right:1px solid rgba(255,255,255,.12);
+}
+body .club-values-grid article:last-child{border-right:0}
+body .club-values-grid span {
+  color:var(--co-red);
+  font-weight:800;
+  letter-spacing:.12em;
+}
+body .club-values-grid h3 {
+  margin:48px 0 16px;
+  font-family:var(--co-font-heavy);
+  font-size:clamp(1.7rem,2.4vw,2.6rem);
+  font-weight:400;
+  text-transform:uppercase;
+}
+body .club-values-grid p { margin:0; font-size:.92rem; }
+
+body .club-today {
+  padding:clamp(82px,9vw,140px) 0;
+  background:
+    radial-gradient(circle at 75% 35%,rgba(157,18,61,.2),transparent 30%),
+    linear-gradient(160deg,#071a37,#040d1e);
+}
+body .club-today-grid {
+  display:grid;
+  grid-template-columns:minmax(0,1.15fr) minmax(320px,.85fr);
+  gap:clamp(48px,8vw,120px);
+  align-items:center;
+}
+body .club-today-copy h2 { margin:16px 0 30px; }
+body .club-today-copy .button { margin-top:18px; }
+body .club-place-card {
+  padding:clamp(30px,4vw,52px);
+  border:1px solid rgba(255,255,255,.15);
+  border-radius:24px;
+  background:
+    linear-gradient(180deg,rgba(4,10,22,.22),rgba(4,10,22,.92)),
+    var(--co-photo-scrum) center/cover;
+  box-shadow:var(--co-shadow-lg);
+}
+body .club-place-card h3 {
+  margin:16px 0 20px;
+  font-family:var(--co-font-heavy);
+  font-size:clamp(2.6rem,4.5vw,4.8rem);
+  font-weight:400;
+  line-height:.92;
+  text-transform:uppercase;
+}
+body .club-place-card dl { margin:30px 0; }
+body .club-place-card dl div {
+  display:grid;
+  grid-template-columns:90px 1fr;
+  gap:18px;
+  padding:13px 0;
+  border-top:1px solid rgba(255,255,255,.12);
+}
+body .club-place-card dt {
+  color:rgba(255,255,255,.48);
+  font-size:.72rem;
+  font-weight:800;
+  letter-spacing:.09em;
+  text-transform:uppercase;
+}
+body .club-place-card dd { margin:0; color:#fff; font-weight:600; }
+body .club-place-card > a { color:#fff; font-weight:800; }
+
+body .club-bureau {
+  padding-top:clamp(88px,10vw,150px);
+  padding-bottom:clamp(88px,10vw,150px);
+}
+body .club-project {
+  padding-bottom:clamp(90px,11vw,170px);
+}
+body .club-project-lead {
+  max-width:900px;
+  margin-bottom:46px;
+}
+body .club-project-lead h2 { margin:14px 0 24px; }
+body .club-project-lead > p:last-child {
+  color:#fff;
+  font-size:clamp(1.08rem,1.5vw,1.3rem);
+}
+@media(max-width:1080px){
+  body .club-intro,
+  body .club-today-grid { grid-template-columns:1fr; }
+  body .club-pillars-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
+  body .club-values-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
+  body .club-values-grid article { border-bottom:1px solid rgba(255,255,255,.12); }
+  body .club-values-grid article:nth-child(2n){border-right:0}
+  body .club-values-grid article:last-child{grid-column:1/-1;border-bottom:0}
+}
+
+@media(max-width:760px){
+  body .club-page .club-hero-compact {
+    min-height:310px !important;
+    padding-top:92px !important;
+    padding-bottom:38px !important;
+  }
+  body .club-page .club-hero-compact h1 { font-size:clamp(3.5rem,17vw,5.4rem); }
+  body .club-page .club-hero-compact .inner-hero-copy { display:none; }
+  body .club-intro { padding-top:64px; padding-bottom:72px; }
+  body .club-key-figures { grid-template-columns:1fr 1fr; }
+  body .club-key-figures article { min-height:130px; padding:20px; }
+  body .club-section-heading { grid-template-columns:1fr; gap:18px; }
+  body .club-section-heading > p { justify-self:start; }
+  body .club-pillars-grid { grid-template-columns:1fr; }
+  body .club-pillar { min-height:330px; }
+  body .club-values-grid { grid-template-columns:1fr; }
+  body .club-values-grid article,
+  body .club-values-grid article:nth-child(2n),
+  body .club-values-grid article:last-child {
+    grid-column:auto;
+    min-height:0;
+    border-right:0;
+    border-bottom:1px solid rgba(255,255,255,.12);
+  }
+  body .club-values-grid article:last-child { border-bottom:0; }
+  body .club-values-grid h3 { margin-top:24px; }
+}
+
+
+/* ===================================================================
+   V2 — SYSTÈME COMMUN ACCUEIL + CALENDRIER
+   Cette couche finale harmonise les pages intérieures sans modifier
+   leur contenu ni les points d'ancrage utilisés par les scripts.
+   =================================================================== */
+:root {
+  --rcc-content: min(1280px, calc(100% - 64px));
+  --rcc-content-narrow: min(920px, calc(100% - 64px));
+  --rcc-section-space: clamp(72px, 8vw, 124px);
+  --rcc-section-space-compact: clamp(48px, 5vw, 78px);
+  --rcc-hero-inner: clamp(340px, 42vh, 460px);
+  --rcc-radius-xs: 10px;
+  --rcc-radius-sm: 16px;
+  --rcc-radius-md: 22px;
+  --rcc-shadow-card: 0 24px 60px rgba(0, 0, 0, .22);
+  --rcc-shadow-hover: 0 34px 74px rgba(0, 0, 0, .3);
+  --rcc-border: 1px solid rgba(255, 255, 255, .14);
+  --rcc-transition: 280ms cubic-bezier(.16, 1, .3, 1);
+}
+
+html {
+  color-scheme: dark;
+  scroll-padding-top: 88px;
+}
+
+body {
+  min-width: 320px;
+  background:
+    radial-gradient(circle at 95% 18%, rgba(157, 18, 61, .12), transparent 28%),
+    var(--co-navy-deep);
+}
+
+body :is(img, video, iframe, svg) { max-width: 100%; }
+body :is(p, li, dd, a, button, input, textarea, select) { overflow-wrap: anywhere; }
+body :is(main, section, article, div) { min-width: 0; }
+
+body .page-shell {
+  width: var(--rcc-content);
+  margin-inline: auto;
+}
+
+/* En-tête commun : transparent sur les héros, dense et opaque au défilement. */
+body .site-header {
+  height: 88px;
+  padding-inline: clamp(18px, 3vw, 52px);
+  background: linear-gradient(180deg, rgba(4, 13, 30, .84), rgba(4, 13, 30, .2));
+  border-bottom-color: rgba(255, 255, 255, .12);
+}
+body .site-header.is-scrolled {
+  height: 70px;
+  background: rgba(4, 13, 30, .96);
+  box-shadow: 0 18px 50px rgba(0, 0, 0, .28);
+}
+body .site-header .header-quicklinks a,
+body .menu-toggle {
+  min-height: 44px;
+}
+body .menu-toggle:focus-visible,
+body .site-header a:focus-visible,
+body .site-nav a:focus-visible {
+  outline: 3px solid var(--co-red);
+  outline-offset: 5px;
+}
+
+/* Héros intérieurs : même proportions maîtrisées que Calendrier. */
+body main > :is(.history-hero, .academy-hero, .senior-hero) {
+  min-height: var(--rcc-hero-inner) !important;
+  padding: 118px 0 52px !important;
+  align-items: flex-end;
+  clip-path: polygon(0 0, 100% 0, 100% 94%, 0 100%);
+}
+body main > :is(.history-hero, .academy-hero, .senior-hero) > .page-shell,
+body main > :is(.history-hero, .academy-hero, .senior-hero) > div:not(.hero-art) {
+  position: relative;
+  z-index: 2;
+  width: var(--rcc-content);
+  margin-inline: auto;
+}
+body main > :is(.history-hero, .academy-hero, .senior-hero) h1 {
+  max-width: 980px;
+  margin: 12px 0 16px;
+  font-size: clamp(3.6rem, 7.5vw, 7.6rem);
+  line-height: .86;
+}
+body main > :is(.history-hero, .academy-hero, .senior-hero) h1 :is(span, strong) {
+  display: inline;
+}
+body main > :is(.history-hero, .academy-hero, .senior-hero) .inner-hero-copy {
+  max-width: 680px;
+  margin: 0;
+  color: rgba(255, 255, 255, .78);
+  font-size: clamp(.98rem, 1.35vw, 1.16rem);
+  line-height: 1.55;
+}
+body main > :is(.history-hero, .academy-hero, .senior-hero) .hero-art {
+  opacity: .24;
+  pointer-events: none;
+}
+body main > :is(.history-hero, .academy-hero, .senior-hero)::before {
+  z-index: 1;
+  background:
+    linear-gradient(90deg, rgba(4, 13, 30, .9) 0%, rgba(109, 12, 43, .62) 48%, rgba(4, 13, 30, .18) 100%),
+    linear-gradient(0deg, rgba(4, 13, 30, .78), transparent 65%);
+}
+
+/* Photographies officielles adaptées à chaque famille de page. */
+body main > .news-hero { background-image: linear-gradient(100deg, rgba(4,13,30,.72), rgba(109,12,43,.44)), var(--co-photo-action); }
+body main > .shop-hero { background-image: linear-gradient(100deg, rgba(4,13,30,.76), rgba(109,12,43,.52)), var(--co-photo-ball-sunset); }
+body main > .gallery-hero { background-image: linear-gradient(100deg, rgba(4,13,30,.76), rgba(109,12,43,.48)), var(--co-photo-huddle); }
+body main > .partners-hero { background-image: linear-gradient(100deg, rgba(4,13,30,.78), rgba(109,12,43,.45)), var(--co-photo-scrum); }
+body main > .teams-hub-hero,
+body main > .youth-hero { background-image: linear-gradient(100deg, rgba(4,13,30,.74), rgba(109,12,43,.5)), var(--co-photo-youth); }
+body main > .feminine-hero { background-image: linear-gradient(100deg, rgba(4,13,30,.75), rgba(109,12,43,.5)), var(--co-photo-women); }
+body main > .senior-hero { background-image: linear-gradient(100deg, rgba(4,13,30,.72), rgba(109,12,43,.52)), var(--co-photo-ruck); }
+body main > .contact-hero,
+body main > .join-hero { background-image: linear-gradient(100deg, rgba(4,13,30,.76), rgba(109,12,43,.48)), var(--co-photo-run); }
+
+/* Rythme partagé des pages intérieures. */
+body main > :is(section, .page-shell):not(.co-home-hero):not(.history-hero):not(.academy-hero):not(.senior-hero):not(.rcc-calendar-section) {
+  scroll-margin-top: 84px;
+}
+body main :is(.actualites-page, .academy-page, .history-page, .project-content, .gallery-page,
+  .partners-page, .shop-page, .notifications-page, .contact-page, .join-page, .roster-page,
+  .vote-logo-content, .teams-hub-content) {
+  padding-top: var(--rcc-section-space);
+  padding-bottom: var(--rcc-section-space);
+}
+body main :is(.section-head, .history-section-head, .club-section-heading) {
+  margin-bottom: clamp(30px, 4vw, 54px);
+}
+body main :is(.section-head, .history-section-head, .club-section-heading) h2,
+body main section > h2 {
+  max-width: 960px;
+  font-size: clamp(2.45rem, 5vw, 5.2rem);
+  line-height: .91;
+}
+body .eyebrow,
+body .section-kicker {
+  color: #ff467f;
+  font-weight: 800;
+  letter-spacing: .13em;
+  text-transform: uppercase;
+}
+
+/* Composants : mêmes rayons, bordures, ombres et interactions. */
+body :is(.card, .news-grid article, .academy-category, .staff-card, .player-card,
+  .partner-card, .shop-card, .gallery-album, .project-card, .bureau-card,
+  .notification-status-card, .notification-group, .contact-panel, .contact-form,
+  .team-hub-card, .vote-logo-card, .history-timeline-modern article) {
+  border: var(--rcc-border);
+  border-radius: var(--rcc-radius-md);
+  box-shadow: var(--rcc-shadow-card);
+  transition: transform var(--rcc-transition), border-color var(--rcc-transition), box-shadow var(--rcc-transition);
+}
+body :is(.card, .news-grid article, .academy-category, .staff-card, .player-card,
+  .partner-card, .shop-card, .gallery-album, .project-card, .bureau-card,
+  .team-hub-card, .vote-logo-card):hover {
+  transform: translateY(-5px);
+  border-color: rgba(208, 23, 82, .62);
+  box-shadow: var(--rcc-shadow-hover);
+}
+body .button,
+body button:not(.menu-toggle):not(.rcc-calendar-event):not(.rcc-mobile-event) {
+  min-height: 48px;
+}
+body :is(a, button, input, textarea, select) {
+  transition-duration: 220ms;
+}
+
+/* Actualités : hiérarchie éditoriale lisible sur toutes les pages. */
+body .actualites-page .news-list {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: clamp(18px, 2.4vw, 30px);
+}
+body .actualites-page .news-list article {
+  min-height: 440px;
+}
+body .actualites-page .news-list article:first-child {
+  grid-column: span 2;
+}
+body .actualites-page .news-list article h3 {
+  font-size: clamp(1.55rem, 2.2vw, 2.25rem);
+  line-height: 1.02;
+}
+
+/* Article individuel : lecture éditoriale, contenu immédiatement visible. */
+body .article-page {
+  width: var(--rcc-content);
+  padding-top: clamp(126px, 12vw, 174px);
+  padding-bottom: var(--rcc-section-space);
+}
+body .article-reader {
+  width: min(100%, 1080px);
+  margin-inline: auto;
+}
+body .article-back {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  margin-bottom: 30px;
+  color: rgba(255, 255, 255, .72);
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+}
+body .article-back::before {
+  content: "←";
+  margin-right: 10px;
+  color: var(--co-red);
+}
+body .article-header {
+  position: relative;
+  padding: clamp(30px, 5vw, 64px);
+  overflow: hidden;
+  border: var(--rcc-border);
+  border-radius: var(--rcc-radius-md);
+  background:
+    radial-gradient(circle at 100% 0, rgba(208, 23, 82, .24), transparent 36%),
+    linear-gradient(145deg, rgba(157, 18, 61, .9), rgba(4, 13, 30, .98));
+  box-shadow: var(--rcc-shadow-card);
+}
+body .article-header h1 {
+  max-width: 960px;
+  margin: 18px 0 22px;
+  color: #fff;
+  font-family: var(--co-font-heavy);
+  font-size: clamp(3rem, 7vw, 7rem);
+  font-weight: 400;
+  line-height: .88;
+  text-transform: uppercase;
+  text-wrap: balance;
+}
+body .article-header > p {
+  max-width: 760px;
+  color: rgba(255, 255, 255, .78);
+  font-size: clamp(1rem, 1.5vw, 1.2rem);
+  line-height: 1.65;
+}
+body .article-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 30px;
+}
+body .article-main-image {
+  margin: clamp(24px, 4vw, 42px) 0;
+  overflow: hidden;
+  border-radius: var(--rcc-radius-md);
+  background: var(--co-burgundy-deep);
+  box-shadow: var(--rcc-shadow-card);
+}
+body .article-main-image img {
+  display: block;
+  width: 100%;
+  max-height: 680px;
+  object-fit: cover;
+}
+body .article-body {
+  width: min(100%, 780px);
+  margin-inline: auto;
+  color: rgba(255, 255, 255, .82);
+  font-size: clamp(1.02rem, 1.4vw, 1.16rem);
+  line-height: 1.82;
+}
+body .article-body p + p { margin-top: 1.4em; }
+body .article-gallery {
+  margin-top: var(--rcc-section-space-compact);
+}
+body .article-gallery > div {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+body .article-gallery img {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  border-radius: var(--rcc-radius-sm);
+  object-fit: cover;
+}
+
+/* Grilles dynamiques secondaires. */
+body :is(.shop-grid, .partners-grid, .gallery-grid, .project-grid, .bureau-grid) {
+  gap: clamp(18px, 2.4vw, 30px);
+}
+body .shop-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+body .partners-grid,
+body .gallery-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+body .project-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+body .join-contact-page {
+  width: var(--rcc-content);
+  padding-top: var(--rcc-section-space);
+  padding-bottom: var(--rcc-section-space);
+}
+body .join-contact-layout {
+  gap: clamp(24px, 4vw, 54px);
+}
+body .join-form,
+body .map-panel {
+  border-radius: var(--rcc-radius-md);
+}
+body .map-panel iframe {
+  display: block;
+  width: 100%;
+  min-height: 420px;
+  border: 0;
+  border-radius: inherit;
+}
+
+/* École et Pôle jeunes : deux cartes équilibrées, puis une colonne mobile. */
+body .academy-page {
+  width: var(--rcc-content);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: clamp(22px, 3vw, 40px);
+  align-items: stretch;
+}
+body .academy-category {
+  height: auto;
+  padding: clamp(22px, 2.5vw, 32px);
+  overflow: hidden;
+  background: linear-gradient(155deg, rgba(157, 18, 61, .94), rgba(67, 8, 28, .96));
+}
+body .academy-category .team-photo {
+  min-height: clamp(220px, 25vw, 310px);
+  border-radius: var(--rcc-radius-sm);
+  overflow: hidden;
+}
+body .academy-category .academy-content h2 {
+  font-size: clamp(2.4rem, 4vw, 4rem);
+}
+body .academy-category .academy-content h2 span {
+  display: block;
+  margin-top: 8px;
+  font: 700 .82rem/1.25 var(--co-font-text);
+  letter-spacing: .08em;
+}
+body .academy-category .staff-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+body .academy-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+body .academy-meta span {
+  border: 1px solid rgba(255, 255, 255, .18);
+  background: rgba(4, 13, 30, .28);
+}
+
+/* Pages sportives : une famille graphique commune. */
+body .training-strip {
+  width: var(--rcc-content);
+  margin-top: clamp(48px, 6vw, 84px);
+  border-radius: var(--rcc-radius-md);
+}
+body .roster-page,
+body .senior-page {
+  width: var(--rcc-content);
+  margin-inline: auto;
+}
+body .roster-group {
+  padding-block: var(--rcc-section-space-compact);
+  border-bottom: 1px solid rgba(255, 255, 255, .12);
+}
+body .roster-group > h2 {
+  margin-bottom: 26px;
+  color: #fff;
+  font-size: clamp(2.2rem, 4vw, 4rem);
+}
+body .roster-grid,
+body .player-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 18px;
+}
+body .player-card {
+  min-height: 210px;
+  background: linear-gradient(160deg, rgba(157, 18, 61, .96), rgba(4, 13, 30, .96));
+}
+
+/* Histoire : chronologie dense, sans effet de longueur artificielle. */
+body .history-timeline-modern {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+}
+body .history-timeline-modern::before { content: none; }
+body .history-timeline-modern article {
+  position: relative;
+  inset: auto;
+  width: auto;
+  min-height: 300px;
+  margin: 0;
+  padding: clamp(24px, 3vw, 38px);
+  background: linear-gradient(150deg, rgba(157, 18, 61, .88), rgba(4, 13, 30, .94));
+}
+body .history-timeline-modern .history-date {
+  position: static;
+  margin-bottom: 28px;
+  color: #ff5b8d;
+  font-size: clamp(2.5rem, 5vw, 5rem);
+}
+body .history-timeline-modern .history-card-content {
+  padding: 0;
+}
+
+/* Formulaires, filtres, états vides et contenu CMS. */
+body :is(input, textarea, select) {
+  max-width: 100%;
+  border: 1px solid rgba(255, 255, 255, .22);
+  border-radius: var(--rcc-radius-xs);
+  background: rgba(255, 255, 255, .07);
+  color: #fff;
+}
+body :is(input, textarea, select):focus-visible {
+  outline: 3px solid rgba(208, 23, 82, .45);
+  outline-offset: 2px;
+  border-color: var(--co-red);
+}
+body .empty-state {
+  padding: clamp(28px, 4vw, 52px);
+  color: rgba(255, 255, 255, .76);
+  text-align: center;
+}
+body :is(table, .table-wrap) { max-width: 100%; }
+body .table-wrap { overflow-x: auto; }
+
+/* Footer identique, plus compact et sans rupture de largeur. */
+body .rcc-footer {
+  padding-top: clamp(64px, 7vw, 104px);
+  padding-bottom: clamp(30px, 4vw, 54px);
+  background:
+    radial-gradient(circle at 12% 0, rgba(157, 18, 61, .24), transparent 34%),
+    #030a18 !important;
+}
+body .rcc-footer .page-shell { width: var(--rcc-content); }
+
+@media (max-width: 1100px) {
+  :root { --rcc-content: min(100% - 44px, 1280px); }
+  body .actualites-page .news-list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  body :is(.shop-grid, .partners-grid, .gallery-grid, .project-grid) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  body .roster-grid,
+  body .player-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+
+@media (max-width: 820px) {
+  :root {
+    --rcc-content: min(100% - 36px, 1280px);
+    --rcc-hero-inner: 350px;
+  }
+  body main > :is(.history-hero, .academy-hero, .senior-hero) {
+    min-height: var(--rcc-hero-inner) !important;
+    padding: 104px 0 42px !important;
+  }
+  body main > :is(.history-hero, .academy-hero, .senior-hero) h1 {
+    font-size: clamp(3.2rem, 12vw, 5.5rem);
+  }
+  body .academy-page { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  body .academy-category .staff-grid { grid-template-columns: 1fr; }
+  body .history-timeline-modern { grid-template-columns: 1fr; }
+  body .roster-grid,
+  body .player-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 620px) {
+  :root {
+    --rcc-content: calc(100% - 28px);
+    --rcc-section-space: 64px;
+    --rcc-hero-inner: 300px;
+  }
+  html { scroll-padding-top: 72px; }
+  body .site-header { height: 72px; padding-inline: 14px; }
+  body .site-header.is-scrolled { height: 64px; }
+  body main > :is(.history-hero, .academy-hero, .senior-hero) {
+    min-height: var(--rcc-hero-inner) !important;
+    padding: 88px 0 34px !important;
+    clip-path: polygon(0 0, 100% 0, 100% 97%, 0 100%);
+  }
+  body main > :is(.history-hero, .academy-hero, .senior-hero) h1 {
+    margin-block: 8px 10px;
+    font-size: clamp(2.85rem, 15.5vw, 4.7rem);
+  }
+  body main > :is(.history-hero, .academy-hero, .senior-hero) .inner-hero-copy {
+    display: block;
+    max-width: 34rem;
+    font-size: .9rem;
+    line-height: 1.4;
+  }
+  body main > :is(.history-hero, .academy-hero, .senior-hero) .academy-tabs {
+    display: none;
+  }
+  body .actualites-page .news-list,
+  body .academy-page,
+  body :is(.shop-grid, .partners-grid, .gallery-grid, .project-grid),
+  body .roster-grid,
+  body .player-grid {
+    grid-template-columns: 1fr;
+  }
+  body .actualites-page .news-list article:first-child { grid-column: auto; }
+  body .actualites-page .news-list article { min-height: 390px; }
+  body .academy-category { padding: 18px; }
+  body .academy-category .team-photo { min-height: 210px; }
+  body .history-timeline-modern article { min-height: 0; }
+  body .button { width: 100%; min-height: 52px; padding-inline: 22px; }
+  body .button + .button { margin-top: 8px; }
+  body .article-page { padding-top: 96px; }
+  body .article-header { padding: 26px 20px; }
+  body .article-header h1 { font-size: clamp(2.65rem, 14vw, 4.4rem); }
+  body .article-actions { display: grid; }
+  body .article-gallery > div { grid-template-columns: 1fr; }
+  body .rcc-calendar-section { padding-top: 54px; }
+}
+
+@media (max-width: 390px) {
+  :root { --rcc-content: calc(100% - 24px); }
+  body main > :is(.history-hero, .academy-hero, .senior-hero) h1 {
+    font-size: clamp(2.6rem, 15vw, 4rem);
+  }
+  body .rcc-calendar-navigation { gap: 6px; }
+  body .rcc-calendar-navigation button { padding-inline: 12px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  body *, body *::before, body *::after {
+    scroll-behavior: auto !important;
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+  }
+  body [data-reveal] {
+    opacity: 1 !important;
+    transform: none !important;
+  }
+}
+
+/* ===================================================================
+   V2.3 — DIRECTION TYPOGRAPHIQUE UNIQUE
+   La signature du titre d'accueil devient celle de tout le site.
+   =================================================================== */
+:root {
+  --rcc-title-font: var(--rcc-display);
+  --rcc-title-weight: 600;
+  --rcc-title-spacing: -.02em;
+  --rcc-card-radius: 18px;
+  --rcc-control-radius: 2px;
+}
+
+body :is(
+  h1, h2, h3,
+  .footer-brand strong,
+  .nav-intro strong,
+  .club-access-card span,
+  .history-date,
+  .rcc-calendar-month,
+  .rcc-mobile-day-date,
+  .match-hero-side,
+  .team-facts strong,
+  .club-signature-mark
+) {
+  font-family: var(--rcc-title-font) !important;
+  font-weight: var(--rcc-title-weight) !important;
+  font-style: italic;
+  letter-spacing: var(--rcc-title-spacing) !important;
+  text-rendering: geometricPrecision;
+}
+
+body :is(h1, h2, h3) {
+  text-transform: uppercase;
+}
+
+body :is(h1, h2, h3) :is(span, strong, em) {
+  font-family: inherit;
+  font-weight: inherit;
+  font-style: inherit;
+  letter-spacing: inherit;
+}
+
+/* Tous les bandeaux intérieurs partagent exactement la même composition. */
+body main > :is(.history-hero, .academy-hero, .senior-hero) {
+  --rcc-inner-photo: var(--co-photo-huddle);
+  background-image: var(--rcc-inner-photo) !important;
+  background-position: var(--page-title-banner-position, center center) !important;
+  background-size: cover !important;
+}
+body main > .news-hero { --rcc-inner-photo: var(--co-photo-action); }
+body main > .shop-hero { --rcc-inner-photo: var(--co-photo-run); }
+body main > .gallery-hero { --rcc-inner-photo: var(--co-photo-huddle); }
+body main > .partners-hero { --rcc-inner-photo: var(--co-photo-scrum); }
+body main > :is(.teams-hub-hero, .youth-hero, .academy-hero-compact) { --rcc-inner-photo: var(--co-photo-youth); }
+body main > .feminine-hero { --rcc-inner-photo: var(--co-photo-women); }
+body main > .senior-hero { --rcc-inner-photo: var(--co-photo-ruck); }
+body main > :is(.contact-hero, .join-hero) { --rcc-inner-photo: var(--co-photo-run); }
+body main > .matches-hero { --rcc-inner-photo: var(--co-photo-scrum); }
+body main > :is(.club-hero-compact, .history-hero-premium) { --rcc-inner-photo: var(--co-photo-huddle); }
+body main > :is(.notifications-hero, .vote-logo-hero) { --rcc-inner-photo: var(--co-photo-action); }
+
+body main > :is(.history-hero, .academy-hero, .senior-hero)::before {
+  background:
+    linear-gradient(90deg, rgba(3, 8, 18, .94) 0%, rgba(82, 9, 34, .86) 54%, rgba(3, 8, 18, .52) 100%),
+    linear-gradient(0deg, rgba(3, 8, 18, .74), rgba(3, 8, 18, .08)) !important;
+}
+
+body main > :is(.history-hero, .academy-hero, .senior-hero) h1,
+body .article-page .article-header h1 {
+  font-family: var(--rcc-title-font) !important;
+  font-weight: var(--rcc-title-weight) !important;
+  font-style: italic !important;
+  line-height: .9 !important;
+  letter-spacing: var(--rcc-title-spacing) !important;
+  text-shadow: 0 8px 34px rgba(0, 0, 0, .42), 2px 2px 0 rgba(213, 31, 82, .55);
+}
+
+body main > :is(.history-hero, .academy-hero, .senior-hero) :is(.eyebrow, .inner-hero-copy) {
+  width: min(100%, 720px);
+}
+
+/* Un seul langage de cartes. */
+body :is(
+  .card, .news-grid article, .academy-category, .staff-card, .player-card,
+  .partner-card, .shop-card, .gallery-album, .project-card, .bureau-card,
+  .notification-status-card, .notification-group, .contact-panel, .contact-form,
+  .team-hub-card, .vote-logo-card, .history-timeline-modern article,
+  .rcc-calendar-shell, .article-header, .article-main-image
+) {
+  border-radius: var(--rcc-card-radius) !important;
+  border-color: rgba(255, 255, 255, .14) !important;
+  box-shadow: var(--rcc-shadow-card) !important;
+  transition:
+    transform var(--rcc-transition),
+    border-color var(--rcc-transition),
+    box-shadow var(--rcc-transition) !important;
+}
+
+body :is(
+  .card, .news-grid article, .academy-category, .staff-card, .player-card,
+  .partner-card, .shop-card, .gallery-album, .project-card, .bureau-card,
+  .team-hub-card, .vote-logo-card
+):hover {
+  transform: translateY(-5px);
+  border-color: rgba(213, 31, 82, .58) !important;
+  box-shadow: var(--rcc-shadow-hover) !important;
+}
+
+/* Les CTA fonctionnels restants suivent le bouton de l'accueil. */
+body .button {
+  min-height: 52px !important;
+  padding: 0 26px !important;
+  border: 1px solid var(--rcc-red) !important;
+  border-radius: var(--rcc-control-radius) !important;
+  background: var(--rcc-red) !important;
+  color: #fff !important;
+  font-family: var(--rcc-title-font) !important;
+  font-size: .88rem !important;
+  font-weight: 600 !important;
+  font-style: normal;
+  letter-spacing: .1em !important;
+  text-transform: uppercase;
+  box-shadow: none !important;
+  transition:
+    transform .25s var(--rcc-ease),
+    color .25s var(--rcc-ease),
+    background .25s var(--rcc-ease),
+    border-color .25s var(--rcc-ease) !important;
+}
+body .button:hover {
+  transform: translateY(-3px);
+  border-color: #fff !important;
+  background: #fff !important;
+  color: var(--rcc-navy) !important;
+}
+body .button.ghost {
+  border-color: rgba(255, 255, 255, .52) !important;
+  background: transparent !important;
+}
+body .button.ghost:hover {
+  border-color: #fff !important;
+  background: #fff !important;
+  color: var(--rcc-navy) !important;
+}
+
+@media (max-width: 620px) {
+  body .button {
+    min-height: 50px !important;
+  }
+}
+
+/* ===================================================================
+   V2.4 — HEADER FIXE ET GRILLES ÉCOLE / PÔLE JEUNES
+   La variable est mesurée par script.js à partir de la hauteur réelle
+   du header. La valeur ci-dessous sert uniquement de repli sans JS.
+   =================================================================== */
+:root {
+  --rcc-header-offset: 88px;
+}
+
+html {
+  scroll-padding-top: calc(var(--rcc-header-offset) + 16px);
+}
+
+/* Tous les bandeaux intérieurs commencent après le header fixe.
+   Le hero cinématique de l'accueil n'est volontairement pas ciblé. */
+body main > :is(.history-hero, .academy-hero, .senior-hero),
+body main > .history-hero.matches-hero,
+body main > .academy-hero.academy-hero-compact,
+body main.club-page > .club-hero-compact {
+  margin-top: var(--rcc-header-offset) !important;
+  min-height: clamp(240px, 19vw, 270px) !important;
+  padding: 24px 0 !important;
+  scroll-margin-top: calc(var(--rcc-header-offset) + 12px);
+}
+
+/* L'article dynamique n'emploie pas le hero HTML commun. */
+body .article-page {
+  padding-top: calc(var(--rcc-header-offset) + 16px) !important;
+}
+
+/* Ces règles restent volontairement limitées aux deux pages demandées. */
+body [data-category-page="academy"],
+body [data-category-page="youth"] {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  grid-auto-rows: auto !important;
+  align-items: start !important;
+  gap: clamp(18px, 2.2vw, 28px) !important;
+}
+
+body [data-category-page="academy"] > .academy-category,
+body [data-category-page="youth"] > .academy-category {
+  grid-column: auto !important;
+  align-self: start !important;
+  width: auto !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  height: auto !important;
+  padding: 0 !important;
+}
+
+body [data-category-page="academy"] .team-photo,
+body [data-category-page="youth"] .team-photo {
+  width: 100% !important;
+  height: clamp(220px, 18vw, 260px) !important;
+  min-height: 0 !important;
+  max-height: 280px !important;
+  margin: 0 !important;
+}
+
+body [data-category-page="academy"] .academy-content,
+body [data-category-page="youth"] .academy-content {
+  padding: clamp(18px, 2vw, 26px) !important;
+}
+
+body [data-category-page="academy"] .academy-content > p:not(.section-kicker),
+body [data-category-page="youth"] .academy-content > p:not(.section-kicker) {
+  min-height: 0 !important;
+  margin-bottom: 16px;
+}
+
+body [data-category-page="academy"] .staff-grid,
+body [data-category-page="youth"] .staff-grid {
+  grid-template-columns: 1fr !important;
+  gap: 10px !important;
+}
+
+body [data-category-page="academy"] .staff-card,
+body [data-category-page="youth"] .staff-card {
+  min-height: 84px !important;
+  padding: 12px !important;
+}
+
+body [data-category-page="academy"] .staff-avatar,
+body [data-category-page="youth"] .staff-avatar {
+  width: 56px !important;
+  height: 56px !important;
+  flex: 0 0 56px;
+}
+
+@media (max-width: 820px) {
+  body main > :is(.history-hero, .academy-hero, .senior-hero),
+  body main > .history-hero.matches-hero,
+  body main > .academy-hero.academy-hero-compact,
+  body main.club-page > .club-hero-compact {
+    min-height: 220px !important;
+    padding: 20px 0 !important;
+  }
+}
+
+@media (max-width: 700px) {
+  :root {
+    --rcc-header-offset: 72px;
+  }
+
+  body [data-category-page="academy"],
+  body [data-category-page="youth"] {
+    grid-template-columns: 1fr !important;
+  }
+
+  body main > :is(.history-hero, .academy-hero, .senior-hero),
+  body main > .history-hero.matches-hero,
+  body main > .academy-hero.academy-hero-compact,
+  body main.club-page > .club-hero-compact {
+    min-height: 200px !important;
+    padding: 18px 0 !important;
+  }
+
+  body [data-category-page="academy"] .team-photo,
+  body [data-category-page="youth"] .team-photo {
+    height: 220px !important;
+  }
+}
+
+/* ===================================================================
+   V2.8 — DENSITÉ SPORTIVE
+   Staff raffiné, carte Cadettes compacte et effectif Seniors resserré.
+   =================================================================== */
+body .staff-card strong,
+body .staff-card span {
+  font-family: var(--rcc-title-font) !important;
+  font-style: italic;
+  line-height: 1.08 !important;
+  text-transform: uppercase;
+}
+
+body .staff-card strong {
+  font-size: .96rem !important;
+  font-weight: 600 !important;
+  letter-spacing: .035em !important;
+}
+
+body .staff-card span {
+  margin-top: 2px;
+  font-size: .84rem !important;
+  font-weight: 500 !important;
+  letter-spacing: .055em !important;
+}
+
+/* Une seule carte Cadettes, centrée et calibrée sans devenir pleine largeur. */
+body [data-category-page="feminines"] {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) !important;
+  width: min(var(--rcc-content), 1080px) !important;
+  margin-inline: auto !important;
+  align-items: start !important;
+}
+
+body [data-category-page="feminines"] > .academy-category {
+  display: grid !important;
+  grid-template:
+    "title title" auto
+    "photo staff" minmax(250px, 280px)
+    / minmax(0, 2fr) minmax(220px, .8fr) !important;
+  gap: 14px 18px !important;
+  width: 100% !important;
+  min-height: 0 !important;
+  height: auto !important;
+  padding: 16px !important;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, .13) !important;
+  border-top-color: rgba(213, 31, 82, .72) !important;
+  background: linear-gradient(145deg, rgba(12, 23, 43, .98), rgba(3, 10, 24, .99)) !important;
+}
+
+body [data-category-page="feminines"] .academy-content {
+  display: contents !important;
+}
+
+body [data-category-page="feminines"] .academy-content > :is(.section-kicker, p, .academy-meta, h3),
+body [data-category-page="feminines"] :is(.team-gallery, .staff-contact) {
+  display: none !important;
+}
+
+body [data-category-page="feminines"] .academy-content > h2 {
+  grid-area: title;
+  align-self: center;
+  margin: 0 !important;
+  color: #fff;
+  font-size: clamp(2rem, 3vw, 3rem) !important;
+  line-height: .9 !important;
+}
+
+body [data-category-page="feminines"] .academy-content > h2 span,
+body [data-category-page="feminines"] .team-photo > strong,
+body [data-category-page="feminines"] .staff-card small {
+  display: none !important;
+}
+
+body [data-category-page="feminines"] .team-photo {
+  grid-area: photo;
+  width: 100% !important;
+  height: 100% !important;
+  min-height: 250px !important;
+  max-height: 280px !important;
+  margin: 0 !important;
+  border-radius: 10px !important;
+}
+
+body [data-category-page="feminines"] .staff-grid {
+  grid-area: staff;
+  display: grid !important;
+  grid-template-columns: 1fr !important;
+  align-self: start;
+  align-content: start;
+  gap: 7px !important;
+  min-width: 0;
+  margin: 0 !important;
+}
+
+body [data-category-page="feminines"] .staff-card {
+  display: grid !important;
+  grid-template-columns: 42px minmax(0, 1fr) !important;
+  gap: 9px !important;
+  align-items: center !important;
+  min-height: 48px !important;
+  padding: 5px !important;
+  border-radius: 8px !important;
+  background: rgba(255, 255, 255, .045) !important;
+  box-shadow: none !important;
+}
+
+body [data-category-page="feminines"] .staff-avatar {
+  width: 42px !important;
+  height: 42px !important;
+}
+
+body [data-category-page="feminines"] .staff-grid > .empty-state {
+  align-self: start;
+  margin: 0;
+  padding: 14px !important;
+  border: 1px solid rgba(255, 255, 255, .1);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, .045);
+  font-size: .82rem;
+  text-align: left;
+}
+
+/* Même carte joueur, avec une empreinte verticale plus courte. */
+body .roster-page .roster-group {
+  padding-block: clamp(34px, 4vw, 52px) !important;
+}
+
+body .roster-page .roster-title {
+  margin-bottom: 18px !important;
+  padding-bottom: 14px !important;
+}
+
+body .roster-page .player-grid {
+  gap: 14px !important;
+}
+
+body .roster-page .player-card {
+  min-height: 0 !important;
+  height: auto !important;
+}
+
+body .roster-page .player-card .player-photo {
+  height: 190px !important;
+  min-height: 190px !important;
+  max-height: 190px !important;
+}
+
+body .roster-page .player-card .player-info {
+  gap: 6px !important;
+  padding: 14px 16px 16px !important;
+}
+
+body .roster-page .player-card .player-info :is(h3, p, span) {
+  margin-block: 0 !important;
+}
+
+@media (max-width: 700px) {
+  body [data-category-page="feminines"] > .academy-category {
+    grid-template:
+      "title" auto
+      "photo" minmax(210px, 240px)
+      "staff" auto
+      / minmax(0, 1fr) !important;
+    gap: 12px !important;
+    padding: 14px !important;
+  }
+
+  body [data-category-page="feminines"] .team-photo {
+    min-height: 210px !important;
+    max-height: 240px !important;
+  }
+
+  body .roster-page .player-card .player-photo {
+    height: 210px !important;
+    min-height: 210px !important;
+    max-height: 210px !important;
+  }
+}
+
+/* ===================================================================
+   V2.5 — CARTES ESSENTIELLES ÉCOLE DE RUGBY / PÔLE JEUNES
+   Seuls la catégorie, la photo et le staff restent visibles.
+   =================================================================== */
+body [data-category-page="academy"] > .academy-category,
+body [data-category-page="youth"] > .academy-category {
+  display: grid !important;
+  grid-template:
+    "title title" auto
+    "photo staff" minmax(250px, 280px)
+    / minmax(0, 1.8fr) minmax(128px, .8fr) !important;
+  gap: 14px 16px !important;
+  align-items: stretch !important;
+  padding: 16px !important;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, .13) !important;
+  border-top-color: rgba(213, 31, 82, .72) !important;
+  background:
+    linear-gradient(145deg, rgba(12, 23, 43, .98), rgba(3, 10, 24, .99)) !important;
+}
+
+body [data-category-page="academy"] .academy-content,
+body [data-category-page="youth"] .academy-content {
+  display: contents !important;
+}
+
+body [data-category-page="academy"] .academy-content > :is(.section-kicker, p, .academy-meta, h3),
+body [data-category-page="youth"] .academy-content > :is(.section-kicker, p, .academy-meta, h3) {
+  display: none !important;
+}
+
+body [data-category-page="academy"] :is(.team-gallery, .staff-contact),
+body [data-category-page="youth"] :is(.team-gallery, .staff-contact) {
+  display: none !important;
+}
+
+body [data-category-page="academy"] .academy-content > h2,
+body [data-category-page="youth"] .academy-content > h2 {
+  grid-area: title;
+  align-self: center;
+  min-width: 0;
+  margin: 0 !important;
+  color: #fff;
+  font-size: clamp(2rem, 3vw, 3rem) !important;
+  line-height: .9 !important;
+}
+
+body [data-category-page="academy"] .academy-content > h2 span,
+body [data-category-page="youth"] .academy-content > h2 span {
+  display: none !important;
+}
+
+body [data-category-page="academy"] .team-photo,
+body [data-category-page="youth"] .team-photo {
+  grid-area: photo;
+  align-self: stretch;
+  height: 100% !important;
+  min-height: 250px !important;
+  max-height: 280px !important;
+  border-radius: 10px !important;
+}
+
+body [data-category-page="academy"] .team-photo > strong,
+body [data-category-page="youth"] .team-photo > strong {
+  display: none !important;
+}
+
+body [data-category-page="academy"] .staff-grid,
+body [data-category-page="youth"] .staff-grid {
+  grid-area: staff;
+  align-self: start;
+  display: grid !important;
+  grid-template-columns: 1fr !important;
+  align-content: start;
+  gap: 7px !important;
+  min-width: 0;
+  margin: 0 !important;
+}
+
+body [data-category-page="academy"] .staff-card,
+body [data-category-page="youth"] .staff-card {
+  display: grid !important;
+  grid-template-columns: 42px minmax(0, 1fr) !important;
+  gap: 9px !important;
+  align-items: center !important;
+  min-width: 0;
+  min-height: 48px !important;
+  padding: 5px !important;
+  border-color: rgba(255, 255, 255, .1) !important;
+  border-radius: 8px !important;
+  background: rgba(255, 255, 255, .045) !important;
+  box-shadow: none !important;
+}
+
+body [data-category-page="academy"] .staff-card:hover,
+body [data-category-page="youth"] .staff-card:hover {
+  transform: none;
+  border-color: rgba(213, 31, 82, .48) !important;
+}
+
+body [data-category-page="academy"] .staff-avatar,
+body [data-category-page="youth"] .staff-avatar {
+  width: 42px !important;
+  height: 42px !important;
+  flex-basis: 42px;
+}
+
+body [data-category-page="academy"] .staff-card > div:last-child,
+body [data-category-page="youth"] .staff-card > div:last-child {
+  min-width: 0;
+}
+
+body [data-category-page="academy"] .staff-card :is(strong, span),
+body [data-category-page="youth"] .staff-card :is(strong, span) {
+  display: block;
+  overflow: hidden;
+  color: #fff !important;
+  font-size: .78rem;
+  line-height: 1.05;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+body [data-category-page="academy"] .staff-card small,
+body [data-category-page="youth"] .staff-card small {
+  display: none !important;
+}
+
+@media (max-width: 700px) {
+  body [data-category-page="academy"] > .academy-category,
+  body [data-category-page="youth"] > .academy-category {
+    grid-template:
+      "title" auto
+      "photo" minmax(210px, 240px)
+      "staff" auto
+      / minmax(0, 1fr) !important;
+    gap: 12px !important;
+    padding: 14px !important;
+  }
+
+  body [data-category-page="academy"] .team-photo,
+  body [data-category-page="youth"] .team-photo {
+    min-height: 210px !important;
+    max-height: 240px !important;
+  }
+
+  body [data-category-page="academy"] .staff-grid,
+  body [data-category-page="youth"] .staff-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+}
+
+@media (max-width: 430px) {
+  body [data-category-page="academy"] .staff-grid,
+  body [data-category-page="youth"] .staff-grid {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* ===================================================================
+   V2.7 — BANDEAU DE TITRE COMMUN
+   En-tête de rubrique sobre pour toutes les pages hors accueil.
+   =================================================================== */
+body main > .page-title-banner,
+body .article-page .page-title-banner {
+  position: relative;
+  isolation: isolate;
+  box-sizing: border-box;
+  width: 100%;
+  height: clamp(150px, 11vw, 170px) !important;
+  min-height: 140px !important;
+  max-height: 180px !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  overflow: hidden;
+  display: grid !important;
+  align-items: center !important;
+  clip-path: none !important;
+  border: 0 !important;
+  border-bottom: 3px solid var(--page-title-banner-accent, #d51f52) !important;
+  background-color: var(--rcc-navy) !important;
+  background-image: var(--page-title-banner-image, var(--rcc-inner-photo, var(--co-photo-huddle))) !important;
+  background-position: var(--page-title-banner-position, center center) !important;
+  background-size: cover !important;
+  box-shadow: none !important;
+  opacity: 1 !important;
+  transform: none !important;
+  animation: none !important;
+  transition: none !important;
+}
+
+/* Les bandeaux placés directement dans main suivent immédiatement le header. */
+body main > .page-title-banner {
+  margin-top: var(--rcc-header-offset) !important;
+}
+
+body main > .page-title-banner::before,
+body .article-page .page-title-banner::before {
+  position: absolute !important;
+  inset: 0 !important;
+  z-index: 0 !important;
+  display: block !important;
+  content: "" !important;
+  background:
+    linear-gradient(
+      90deg,
+      rgba(4, 10, 23, var(--page-title-banner-overlay, .68)),
+      rgba(var(--page-title-banner-overlay-rgb, 116, 13, 48), var(--page-title-banner-overlay, .68)),
+      rgba(4, 10, 23, var(--page-title-banner-overlay, .68))
+    ) !important;
+}
+
+body main > .page-title-banner::after,
+body .article-page .page-title-banner::after,
+body main > .page-title-banner .hero-art {
+  display: none !important;
+  content: none !important;
+}
+
+body main > .page-title-banner > .page-shell,
+body main > .page-title-banner > div:not(.hero-art),
+body .article-page .page-title-banner {
+  align-self: center !important;
+}
+
+body main > .page-title-banner > .page-shell,
+body main > .page-title-banner > div:not(.hero-art) {
+  box-sizing: border-box;
+  width: var(--rcc-content) !important;
+  height: 100% !important;
+  min-height: 0 !important;
+  margin: 0 auto !important;
+  padding: 0 !important;
+  display: flex !important;
+  flex-direction: column;
+  align-content: normal !important;
+  align-items: flex-start !important;
+  justify-content: center !important;
+  transform: none !important;
+  animation: none !important;
+}
+
+body main > .page-title-banner :is(.eyebrow, h1, .inner-hero-copy),
+body .article-page .page-title-banner :is(.journal-meta, h1, p) {
+  position: relative;
+  z-index: 1;
+}
+
+body main > .page-title-banner h1,
+body .article-page .page-title-banner h1 {
+  width: min(100%, 900px) !important;
+  margin: 0 !important;
+  overflow: hidden;
+  font-size: clamp(3rem, 4.5vw, 4rem) !important;
+  line-height: .94 !important;
+  text-shadow: 0 3px 18px rgba(0, 0, 0, .42) !important;
+}
+
+body main > .page-title-banner :is(.eyebrow, .journal-meta),
+body .article-page .page-title-banner .journal-meta {
+  display: none !important;
+}
+
+body main > .page-title-banner h1 > :is(span, strong),
+body .article-page .page-title-banner h1 > :is(span, strong) {
+  display: inline !important;
+  margin: 0 !important;
+}
+
+body main > .page-title-banner h1 > strong:not(:first-child),
+body .article-page .page-title-banner h1 > strong:not(:first-child) {
+  margin-left: .18em !important;
+  color: var(--page-title-banner-accent, #d51f52) !important;
+}
+
+body main > .page-title-banner.has-banner-label .eyebrow,
+body .article-page .page-title-banner.has-banner-label .eyebrow {
+  display: block !important;
+  margin: 0 0 5px !important;
+  color: var(--page-title-banner-accent, #d51f52) !important;
+  font-size: .68rem !important;
+  line-height: 1 !important;
+  letter-spacing: .12em !important;
+}
+
+body main > .page-title-banner .inner-hero-copy,
+body .article-page .page-title-banner > p {
+  display: -webkit-box !important;
+  max-width: 680px !important;
+  margin: 6px 0 0 !important;
+  overflow: hidden;
+  color: rgba(255, 255, 255, .82) !important;
+  font-size: .9rem !important;
+  line-height: 1.35 !important;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 1;
+}
+
+body main > .page-title-banner :is(.academy-tabs, .hero-actions) {
+  display: none !important;
+}
+
+/* L'article dynamique utilise le même bandeau, en pleine largeur. */
+body .article-page {
+  width: 100% !important;
+  max-width: none !important;
+  padding-top: var(--rcc-header-offset) !important;
+  padding-inline: 0 !important;
+}
+
+body .article-page .article-reader > :not(.page-title-banner) {
+  width: var(--rcc-content);
+  margin-inline: auto;
+}
+
+body .article-page .page-title-banner {
+  display: flex !important;
+  flex-direction: column;
+  align-items: flex-start !important;
+  justify-content: center;
+  padding-inline: max(24px, calc((100vw - min(1280px, 100vw - 48px)) / 2)) !important;
+}
+
+/* Le contenu utile suit immédiatement le bandeau, sans ancien vide de hero. */
+body main > .page-title-banner + * {
+  margin-top: 0 !important;
+  padding-top: clamp(20px, 2.5vw, 32px) !important;
+}
+
+@media (max-width: 1024px) {
+  body main > .page-title-banner,
+  body .article-page .page-title-banner {
+    height: 150px !important;
+    min-height: 150px !important;
+    max-height: 150px !important;
+  }
+}
+
+@media (max-width: 700px) {
+  body main > .page-title-banner,
+  body .article-page .page-title-banner {
+    height: 140px !important;
+    min-height: 140px !important;
+    max-height: 140px !important;
+  }
+
+  body main > .page-title-banner > .page-shell,
+  body main > .page-title-banner > div:not(.hero-art) {
+    padding: 0 !important;
+  }
+
+  body main > .page-title-banner h1,
+  body .article-page .page-title-banner h1 {
+    margin: 0 !important;
+    font-size: clamp(2rem, 9vw, 2.5rem) !important;
+    line-height: .96 !important;
+  }
+
+  body main > .page-title-banner .inner-hero-copy,
+  body .article-page .page-title-banner > p {
+    display: none !important;
+  }
+
+  body .article-page .page-title-banner {
+    padding-inline: 14px !important;
+  }
+
+  body main > .page-title-banner + * {
+    padding-top: 18px !important;
+  }
+}
