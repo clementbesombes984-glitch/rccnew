@@ -295,7 +295,7 @@
       });
 
     const renderSimpleCard = (item) => `
-      <article>
+      <article data-news-url="${escapeHtml(newsUrl(item, item._index))}">
         ${item.image ? `<div class="news-image"${imageStyle(item.image)}></div>` : ''}
         <span>${escapeHtml(item.category || 'Club')}${item.important ? ' · Important' : ''}</span>
         <h3>${escapeHtml(item.title || 'Actualite RCC')}</h3>

@@ -324,6 +324,7 @@ window.addEventListener('appinstalled', () => {
   const matchTarget = document.querySelector('[data-next-match-hero]');
   const newsGrid = document.querySelector('.news-grid');
   const newsRail = document.querySelector('[data-hero-news-rail]');
+  const mobileNewsRail = window.matchMedia('(max-width: 720px)');
 
   const clean = (value) => String(value || '').replace(/\s+/g, ' ').trim();
 
@@ -349,7 +350,9 @@ window.addEventListener('appinstalled', () => {
       const sourceLink = article.querySelector('a[href]');
       const title = clean(article.querySelector('h3')?.textContent) || `Actualité ${index + 1}`;
       const link = document.createElement('a');
-      link.href = sourceLink?.getAttribute('href') || './actualites.html';
+      link.href = mobileNewsRail.matches
+        ? (sourceLink?.getAttribute('href') || article.dataset.newsUrl || './actualites.html')
+        : './actualites.html';
       const number = document.createElement('span');
       number.textContent = 'Actualité';
       const strong = document.createElement('strong');
@@ -361,6 +364,7 @@ window.addEventListener('appinstalled', () => {
 
   syncMatch();
   syncNews();
+  mobileNewsRail.addEventListener?.('change', syncNews);
   if (matchSource) new MutationObserver(syncMatch).observe(matchSource, { childList: true, subtree: true, characterData: true });
   if (newsGrid) new MutationObserver(syncNews).observe(newsGrid, { childList: true, subtree: true, characterData: true });
 })();
