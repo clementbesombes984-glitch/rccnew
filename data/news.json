@@ -1,21 +1,6 @@
 {
   "news": [
     {
-      "id": "migration-studio-check-ff606291db144b5e94e7186cdd77e5bb",
-      "title": "Validation technique migration RCC",
-      "summary": "Publication technique temporaire de validation, sans notification.",
-      "body": "Test technique temporaire.",
-      "image": "",
-      "category": "Club",
-      "audience": [
-        "actualites"
-      ],
-      "important": false,
-      "notification": false,
-      "featured": false,
-      "date": "2026-10-15"
-    },
-    {
       "id": "staff-u14-2026-07-16",
       "title": "STAFF U14",
       "summary": "🏉 Ils rejoignent le staff U14 avec une seule ambition : accompagner, faire progresser et transmettre leur passion du rugby. 💙❤️",
