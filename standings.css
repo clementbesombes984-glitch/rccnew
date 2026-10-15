@@ -1,0 +1,19 @@
+.standings-page { padding: calc(var(--rcc-header-offset, 100px) + 48px) 0 80px; background: var(--co-burgundy-deep, #6d0c2b); color: white; }
+.standings-page h1 { font-size: clamp(2.8rem, 7vw, 6rem); margin: 0; text-transform: uppercase; }
+.standings-anchors { display: flex; flex-wrap: wrap; gap: 12px; margin: 28px 0 48px; }
+.standings-anchors a { background: #071a37; color: white; padding: 14px 24px; text-transform: uppercase; font-weight: 700; }
+.standings-anchors a:hover, .standings-anchors a:focus-visible { background: #9d123d; outline: 2px solid white; }
+.standings-section { scroll-margin-top: calc(var(--rcc-header-offset, 100px) + 24px); margin-bottom: 64px; }
+.standings-section h2 { color: white; font-size: clamp(1.6rem, 4vw, 2.5rem); }
+.standings-scroll { overflow-x: auto; background: #071a37; border: 1px solid #ffffff30; }
+.standings-scroll:focus-visible { outline: 2px solid white; }
+.standings-table { width: 100%; min-width: 650px; border-collapse: collapse; font-size: .92rem; color: white; }
+.standings-table th, .standings-table td { padding: 13px 12px; text-align: center; border-bottom: 1px solid #ffffff20; }
+.standings-table th:nth-child(2), .standings-table td:nth-child(2) { text-align: left; min-width: 210px; }
+.standings-table th { background: #10294f; }
+.standings-table .is-rcc { background: #9d123d; font-weight: 700; }
+.standings-meta { font-size: .85rem; color: #f0dce3; line-height: 1.7; }
+.standings-meta a { color: white; text-decoration: underline; }
+.standings-message { padding: 20px; background: #071a37; }
+@media (prefers-reduced-motion: no-preference) { html { scroll-behavior: smooth; } }
+@media (max-width: 600px) { .standings-table th, .standings-table td { padding: 12px 8px; } .standings-page { padding-top: calc(var(--rcc-header-offset, 100px) + 28px); } }

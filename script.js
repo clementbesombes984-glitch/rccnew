@@ -37,6 +37,13 @@ const mobileNavLabels = [
 ];
 
 if (nav) {
+  const calendarLink = nav.querySelector('[data-nav-submenu] a[href="./calendrier.html"]');
+  if (calendarLink && !nav.querySelector('a[href="./classements.html"]')) {
+    const standingsLink = document.createElement('a');
+    standingsLink.href = './classements.html';
+    standingsLink.textContent = 'Classement';
+    calendarLink.after(standingsLink);
+  }
   const clubLink = nav.querySelector('a.nav-text-link[href="./club.html"]:not([data-nav-dropdown-main])');
   if (clubLink && !clubLink.closest('[data-nav-dropdown]')) {
     const dropdown = document.createElement('div');

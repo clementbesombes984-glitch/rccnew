@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Classements - Racing Club Cubzaguais</title>
+  <meta name="description" content="Classements officiels FFR des Seniors, Cadets et Cadettes du RCC. Saison 2026-2027." />
+  <meta name="theme-color" content="#b11845" />
+  <link rel="icon" href="./assets/favicon.png" />
+  <link rel="manifest" href="./manifest.webmanifest" />
+  <link rel="apple-touch-icon" href="./assets/pwa-icon-192.png" />
+  <link rel="stylesheet" href="./styles.css" />
+  <link rel="stylesheet" href="./co-theme.css" />
+  <link rel="stylesheet" href="./standings.css" />
+  <script src="./co-theme.js" defer></script>
+  <script src="./analytics.js" defer></script>
+</head>
+<body>
+<header class="site-header">
+      <button class="menu-toggle" type="button" aria-label="Ouvrir le menu" aria-expanded="false" data-menu-toggle>
+        <span></span><span></span><b>Menu</b>
+      </button>
+
+      <a class="brand brand-logo-only" href="./index.html#accueil" aria-label="Racing Club Cubzaguais, accueil">
+        <img src="./assets/logo-rcc.png" alt="Racing Club Cubzaguais" decoding="async" fetchpriority="high" />
+      </a>
+
+      <div class="header-quicklinks" aria-label="Accès rapides">
+        <a href="./nous-rejoindre.html">Nous rejoindre</a>
+      </div>
+
+      <nav class="site-nav v1-nav" aria-label="Navigation principale" data-nav>
+        <div class="nav-intro">
+          <span>Racing Club Cubzaguais</span>
+          <strong>Un club.<br>Une histoire.<br>Un avenir.</strong>
+        </div>
+
+        <div class="nav-main-grid">
+          <div class="nav-dropdown" data-nav-dropdown>
+            <a class="nav-text-link nav-dropdown-main" href="./index.html#accueil" data-nav-dropdown-main aria-haspopup="true" aria-expanded="false">Accueil</a>
+            <div class="nav-submenu" data-nav-submenu><div class="nav-submenu-panel">
+                <a href="./actualites.html">Actualités</a>
+              <a href="./calendrier.html">Calendrier</a>
+            </div></div>
+          </div>
+
+          <div class="nav-dropdown" data-nav-dropdown>
+            <a class="nav-text-link nav-dropdown-main" href="./club.html" data-nav-dropdown-main aria-haspopup="true" aria-expanded="false">Le Club</a>
+            <div class="nav-submenu" data-nav-submenu><div class="nav-submenu-panel">
+              <a href="./club.html">Le Club</a>
+              <a href="./histoire.html">Histoire</a>
+              </div></div>
+          </div>
+
+          <div class="nav-dropdown" data-nav-dropdown>
+            <a class="nav-text-link nav-dropdown-main" href="./equipes.html" data-nav-dropdown-main aria-haspopup="true" aria-expanded="false">Les Équipes</a>
+            <div class="nav-submenu" data-nav-submenu><div class="nav-submenu-panel">
+              <a href="./ecole.html">École de Rugby</a>
+              <a href="./jeunes.html">Pôle Jeunes</a>
+              <a href="./cadettes.html">Cadettes</a>
+              <a href="./senior.html">Seniors</a>
+            </div></div>
+          </div>
+        </div>
+
+        <div class="nav-secondary">
+          <a class="nav-text-link" href="./galerie.html">Galerie</a>
+          <a class="nav-text-link" href="./partenaires.html">Partenaires</a>
+          <a class="nav-text-link" href="./boutique.html">Boutique</a>
+          <a class="nav-cta" href="./nous-rejoindre.html">Contact</a>
+        </div>
+
+        <div class="nav-utilities">
+          <a class="notification-link" href="./notifications.html" aria-label="Notifications" title="Notifications">🔔</a>
+          <a class="admin-link settings-link" href="/cms-login" aria-label="Accès administration" title="Administration">⚙</a>
+        </div>
+      </nav>
+    </header>
+<main class="standings-page">
+  <div class="page-shell">
+    <h1>Classements</h1>
+    <p>Saison 2026-2027</p>
+    <nav class="standings-anchors" aria-label="Accès aux classements">
+      <a href="#seniors">Seniors</a><a href="#cadets">Cadets</a><a href="#cadettes">Cadettes</a>
+    </nav>
+    <div id="standings" aria-live="polite"><p>Chargement des trois classements…</p></div>
+    <noscript><p>Activez JavaScript pour afficher les classements.</p>
+      <a href="https://monclubhouse.ffr.fr/clubs/r-c-cubzaguais">Consulter la FFR</a>
+    </noscript>
+  </div>
+</main>
+<footer class="site-footer rcc-footer" data-footer></footer>
+<script src="./script.js"></script>
+<script src="./data-loader.js"></script>
+<script src="./notifications.js"></script>
+<script src="./standings.js"></script>
+</body>
+</html>
