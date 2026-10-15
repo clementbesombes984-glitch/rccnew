@@ -5,8 +5,7 @@ compatibility_date = "2026-10-15"
 [triggers]
 crons = ["0 7 * * MON"]
 
-# Before deployment, bind RCC_STANDINGS to the SAME dedicated KV namespace
-# in this Worker and in the rccnew Pages project. No production resource reused.
-# [[kv_namespaces]]
-# binding = "RCC_STANDINGS"
-# id = "<dedicated-rccnew-namespace-id>"
+# Shared with rccnew Pages Production: dedicated rccnew-standings namespace.
+[[kv_namespaces]]
+binding = "RCC_STANDINGS"
+id = "fa3dae8644c744c4915f2f23b70a9f51"

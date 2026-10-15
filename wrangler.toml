@@ -1,5 +1,10 @@
-name = "rcc-co-redesign"
+name = "rccnew"
 compatibility_date = "2026-07-03"
 compatibility_flags = ["nodejs_compat"]
 
 pages_build_output_dir = "."
+
+# Production Pages only; Preview bindings remain separate.
+[[env.production.kv_namespaces]]
+binding = "RCC_STANDINGS"
+id = "fa3dae8644c744c4915f2f23b70a9f51"
