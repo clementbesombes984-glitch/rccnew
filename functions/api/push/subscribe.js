@@ -72,6 +72,9 @@ export async function onRequestPost({ request, env }) {
 }
 
 export async function onRequestDelete({ request, env }) {
+  if (!isAllowedOrigin(request, env)) {
+    return json({ ok: false, error: 'Origine non autorisée.' }, 409);
+  }
   if (!env.RCC_PUSH_SUBSCRIPTIONS) {
     return json({ ok: false, error: 'KV binding RCC_PUSH_SUBSCRIPTIONS manquant.' }, 500);
   }

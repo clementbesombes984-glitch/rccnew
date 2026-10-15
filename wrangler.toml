@@ -8,3 +8,15 @@ pages_build_output_dir = "."
 [[env.production.kv_namespaces]]
 binding = "RCC_STANDINGS"
 id = "fa3dae8644c744c4915f2f23b70a9f51"
+
+# Existing subscriptions: reuse as-is, never recreate the namespace or VAPID keys.
+[[env.production.kv_namespaces]]
+binding = "RCC_PUSH_SUBSCRIPTIONS"
+id = "5e412dc7eadc4548ba85ff30c789fdbc"
+
+[env.production.vars]
+RCC_GITHUB_REPOSITORY = "clementbesombes984-glitch/rccnew"
+RCC_GITHUB_BRANCH = "main"
+RCC_SITE_ORIGIN = "https://rccubzaguais.fr"
+RCC_PUSH_ENABLED = "false"
+RCC_PUSH_DELIVERY_MODE = "workflow"

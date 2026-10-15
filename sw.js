@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'rcc-pwa-v2-6-standings';
+const CACHE_VERSION = 'rcc-pwa-v2-7-migration';
 const STATIC_CACHE = CACHE_VERSION + '-static';
 const DATA_CACHE = CACHE_VERSION + '-data';
 
@@ -79,7 +79,7 @@ self.addEventListener('install', (event) => {
       .open(STATIC_CACHE)
       .then((cache) =>
         Promise.allSettled(
-          STATIC_ASSETS.map((url) => cache.add(new Request(url, { cache: 'reload' })))
+          STATIC_ASSETS.filter((url) => !url.startsWith('/admin/')).map((url) => cache.add(new Request(url, { cache: 'reload' })))
         )
       )
       .then(() => self.skipWaiting())
@@ -93,7 +93,7 @@ self.addEventListener('activate', (event) => {
       .then((keys) =>
         Promise.all(
           keys
-            .filter((key) => !key.startsWith(CACHE_VERSION))
+            .filter((key) => key.startsWith('rcc-pwa-') && !key.startsWith(CACHE_VERSION))
             .map((key) => caches.delete(key))
         )
       )
@@ -104,9 +104,9 @@ self.addEventListener('activate', (event) => {
 async function networkFirst(request, cacheName, fallbackUrl) {
   const cache = await caches.open(cacheName);
   try {
-    const response = await fetch(request);
+    const response = await fetch(request, { cache: 'no-store' });
     if (response && response.ok) {
-      cache.put(request, response.clone());
+      await cache.put(request, response.clone());
     }
     return response;
   } catch (error) {
@@ -153,6 +153,11 @@ async function cacheFirst(request) {
 self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
   if (url.origin !== self.location.origin || event.request.method !== 'GET') return;
+  // Never cache APIs, authenticated tools or admin HTML, even when navigated to.
+  if (url.pathname.startsWith('/api/') || url.pathname.startsWith('/admin/') || url.pathname.startsWith('/cms-login')) {
+    event.respondWith(fetch(new Request(event.request, { cache: 'no-store' })));
+    return;
+  }
   if (url.pathname.startsWith('/cms-login')) return;
 
   if (event.request.mode === 'navigate' || event.request.destination === 'document') {
@@ -166,7 +171,8 @@ self.addEventListener('fetch', (event) => {
   }
 
   if (DATA_ASSETS.includes(url.pathname) || url.pathname.startsWith('/data/')) {
-    event.respondWith(networkFirst(event.request, DATA_CACHE));
+    const stableKey = new Request(new URL(url.pathname, self.location.origin).href);
+    event.respondWith(networkFirst(stableKey, DATA_CACHE));
     return;
   }
 

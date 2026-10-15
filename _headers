@@ -7,3 +7,12 @@
 
 /api/*
   Cache-Control: no-store
+
+/sw.js
+  Cache-Control: no-cache, no-store, must-revalidate
+
+/manifest.webmanifest
+  Cache-Control: no-cache
+
+/admin/*
+  Cache-Control: no-store

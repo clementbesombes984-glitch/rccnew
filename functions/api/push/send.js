@@ -57,10 +57,6 @@ function isAuthorized(request, env) {
   return header === `Bearer ${expected}`;
 }
 
-async function removeSubscription(env, id) {
-  if (id) await env.RCC_PUSH_SUBSCRIPTIONS.delete(id);
-}
-
 export async function onRequestGet({ request, env }) {
   const kvConfigured = Boolean(env.RCC_PUSH_SUBSCRIPTIONS);
   const siteOrigin = configuredOrigin(request, env);
@@ -289,6 +285,13 @@ export async function onRequestPost({ request, env }) {
     return json({ ok: false, error: 'Non autorise.' }, 401);
   }
 
+  if (env.RCC_PUSH_ENABLED !== 'true' || new URL(request.url).origin !== configuredOrigin(request, env)) {
+    return json({ ok: false, error: 'Envois désactivés sur cet environnement avant bascule.' }, 409);
+  }
+  if (env.RCC_PUSH_DELIVERY_MODE !== 'workflow' || request.headers.get('X-RCC-Push-Source') !== 'github-workflow') {
+    return json({ ok: false, error: 'Canal unique requis : workflow GitHub rccnew.' }, 409);
+  }
+
   if (!env.RCC_PUSH_SUBSCRIPTIONS) {
     return json({ ok: false, error: 'KV binding RCC_PUSH_SUBSCRIPTIONS manquant.' }, 500);
   }
@@ -306,14 +309,20 @@ export async function onRequestPost({ request, env }) {
 
   const audience = expandAudience(Array.isArray(payload.audience) ? payload.audience : ['actualites']);
   const siteOrigin = configuredOrigin(request, env);
-  const list = await env.RCC_PUSH_SUBSCRIPTIONS.list();
+  const keys = [];
+  let cursor;
+  do {
+    const page = await env.RCC_PUSH_SUBSCRIPTIONS.list({ ...(cursor ? { cursor } : {}) });
+    keys.push(...page.keys);
+    cursor = page.list_complete === false ? page.cursor : undefined;
+  } while (cursor);
   let sent = 0;
   let skipped = 0;
   let failed = 0;
   let legacyRemoved = 0;
   const errors = [];
 
-  for (const key of list.keys) {
+  for (const key of keys) {
     const raw = await env.RCC_PUSH_SUBSCRIPTIONS.get(key.name);
     if (!raw) continue;
 
@@ -355,11 +364,9 @@ export async function onRequestPost({ request, env }) {
           message: error && error.message ? error.message : 'Erreur inconnue'
         });
       }
-      if (error && (error.statusCode === 404 || error.statusCode === 410)) {
-        await removeSubscription(env, key.name);
-      }
+      // Migration: preserve even expired subscriptions; cleanup is a separate decision.
     }
   }
 
-  return json({ ok: true, sent, skipped, failed, legacyRemoved, total: list.keys.length, errors });
+  return json({ ok: true, sent, skipped, failed, legacyRemoved, total: keys.length, errors });
 }

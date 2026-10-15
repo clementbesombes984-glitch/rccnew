@@ -7,9 +7,14 @@ on:
     paths:
       - data/news.json
       - data/matches.json
+      - data/push-queue.json
 
 jobs:
   notify:
+    if: github.repository == 'clementbesombes984-glitch/rccnew' && vars.RCC_PUSH_ENABLED == 'true'
+    concurrency:
+      group: rccnew-notifications
+      cancel-in-progress: false
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -34,4 +39,6 @@ jobs:
           CURRENT_REF: ${{ github.sha }}
           RCC_SITE_URL: ${{ vars.RCC_SITE_URL }}
           RCC_PUSH_ADMIN_TOKEN: ${{ secrets.RCC_PUSH_ADMIN_TOKEN }}
+          RCC_PUSH_ENABLED: ${{ vars.RCC_PUSH_ENABLED }}
+          RCC_PUSH_DELIVERY_MODE: workflow
         run: node scripts/notify-changes.js

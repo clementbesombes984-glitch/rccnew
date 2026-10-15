@@ -46,10 +46,14 @@ function decodeDataUrl(dataUrl) {
 }
 
 function githubConfig(env) {
-  const repository = env.RCC_GITHUB_REPOSITORY || env.GITHUB_REPOSITORY || 'clementbesombes984-glitch/rcc2026';
+  const repository = 'clementbesombes984-glitch/rccnew';
+  if ((env.RCC_GITHUB_REPOSITORY && env.RCC_GITHUB_REPOSITORY !== repository)
+    || (env.GITHUB_REPOSITORY && env.GITHUB_REPOSITORY !== repository)) {
+    throw new Error('Le Studio de cette version ne peut publier que dans rccnew.');
+  }
   return {
     repository,
-    branch: env.RCC_GITHUB_BRANCH || 'main',
+    branch: 'main',
     token: env.RCC_GITHUB_TOKEN || env.GITHUB_TOKEN || ''
   };
 }
@@ -223,21 +227,23 @@ async function saveCompositionOnServer(composition, env) {
   return normalized;
 }
 
-async function sendPush(push, env, request) {
-  const token = env.PUSH_ADMIN_TOKEN || env.RCC_PUSH_ADMIN_TOKEN || '';
-  if (!push || !token) {
-    return { ok: false, error: 'Notification non configuree.' };
+async function queuePush(push, env) {
+  if (!push || !clean(push.title)) throw new Error('Titre de notification manquant.');
+  const notification = {
+    title: clean(push.title), body: clean(push.body), url: clean(push.url || '/'),
+    audience: globalThis.RCCNotificationCategories.normalizeAudience(push.audience || ['actualites']),
+    type: clean(push.type || 'news'), tag: clean(push.tag), important: Boolean(push.important)
+  };
+  const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(JSON.stringify(notification)));
+  const id = Array.from(new Uint8Array(digest), (b) => b.toString(16).padStart(2, '0')).join('');
+  let current;
+  try { current = await readGithubJson('data/push-queue.json', env); }
+  catch (error) { if (error.status !== 404) throw error; current = { json: { notifications: [] } }; }
+  const entries = current.json.notifications || [];
+  if (!entries.some((entry) => entry.id === id)) {
+    await putGithubFile('data/push-queue.json', utf8ToBase64(JSON.stringify({ notifications: [...entries, { id, ...notification }] }, null, 2)), 'Studio RCC: prépare une notification', env, current.sha);
   }
-
-  const response = await fetch(new URL('/api/push/send', request.url), {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${token}`,
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify(push)
-  });
-  return response.json().catch(() => ({ ok: response.ok }));
+  return { ok: true, deferred: true, channel: 'github-workflow', id };
 }
 
 function normalizeNewsletter(newsletter = {}, pdfPath = '', coverPath = '') {
@@ -368,7 +374,8 @@ export async function onRequestPost({ request, env }) {
     }
 
     if (payload.publishSite) {
-      const published = await publishArticle(payload.article || {}, env);
+      // One delivery channel: a published article is notified by GitHub only.
+      const published = await publishArticle({ ...payload.article, notification: Boolean(payload.publishPush || payload.article?.notification) }, env);
       result.articleCreated = true;
       result.url = published.url;
       result.article = published.article;
@@ -376,7 +383,9 @@ export async function onRequestPost({ request, env }) {
     }
 
     if (payload.publishPush) {
-      result.push = await sendPush(payload.push, env, request);
+      result.push = payload.publishSite
+        ? { ok: true, deferred: true, channel: 'github-workflow', message: 'Notification confiée au workflow GitHub après publication.' }
+        : await queuePush(payload.push, env);
     }
 
     return json(result, 200, authHeaders);

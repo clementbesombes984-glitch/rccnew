@@ -4,7 +4,7 @@ import '../notification-categories.js';
 
 const OFFICIAL_SITE_URL = 'https://rccubzaguais.fr';
 const configuredSiteUrl = process.env.RCC_SITE_URL || process.env.SITE_URL || '';
-const siteUrl = configuredSiteUrl || OFFICIAL_SITE_URL;
+const siteUrl = configuredSiteUrl;
 const token = process.env.RCC_PUSH_ADMIN_TOKEN || process.env.PUSH_ADMIN_TOKEN || '';
 const notificationCategories = globalThis.RCCNotificationCategories;
 
@@ -186,6 +186,16 @@ function matchPayload(item) {
 }
 
 async function send(payload) {
+  if (process.env.RCC_PUSH_ENABLED !== 'true') {
+    console.log('Envois désactivés avant bascule.');
+    return;
+  }
+  if (process.env.GITHUB_REPOSITORY !== 'clementbesombes984-glitch/rccnew') {
+    throw new Error('Seul le workflow rccnew peut envoyer.');
+  }
+  if (!configuredSiteUrl || new URL(configuredSiteUrl).origin !== OFFICIAL_SITE_URL) {
+    throw new Error('RCC_SITE_URL doit cibler explicitement le domaine officiel après bascule.');
+  }
   console.log('Payload envoye a /api/push/send:', JSON.stringify(payload, null, 2));
 
   if (configuredSiteUrl && configuredSiteUrl.replace(/\/$/, '') !== OFFICIAL_SITE_URL) {
@@ -201,7 +211,8 @@ async function send(payload) {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      Authorization: `Bearer ${token}`
+      Authorization: `Bearer ${token}`,
+      'X-RCC-Push-Source': 'github-workflow'
     },
     body: JSON.stringify(payload)
   });
@@ -259,7 +270,11 @@ console.log('Evenements calendrier detectes avec notification=true:', currentMat
 
 const newsPayloads = currentNews.filter(shouldNotifyNews).map(newsPayload);
 const matchPayloads = currentMatches.filter(shouldNotifyMatch).map(matchPayload);
-const payloads = [...newsPayloads, ...matchPayloads];
+const previousQueue = collection(readJsonAt(beforeRef, 'data/push-queue.json'), 'notifications');
+const previousQueueIds = new Set(previousQueue.map((entry) => entry.id));
+const queuedPayloads = collection(readJson('data/push-queue.json'), 'notifications')
+  .filter((entry) => entry.id && !previousQueueIds.has(entry.id));
+const payloads = [...newsPayloads, ...matchPayloads, ...queuedPayloads];
 
 console.log('Notifications actualites a envoyer:', newsPayloads.length);
 console.log('Notifications calendrier a envoyer:', matchPayloads.length);

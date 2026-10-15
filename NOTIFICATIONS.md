@@ -34,7 +34,12 @@ Le projet contient maintenant une base serveur pour les vraies notifications pus
 
 Pour que cela fonctionne en production, il faut configurer Cloudflare et GitHub.
 
-### 1. Creer les cles VAPID
+### 1. Clés VAPID — attention à la migration
+
+Pour la migration rcc2026 vers rccnew, NE PAS suivre la procédure de génération
+ci-dessous : réutiliser exclusivement les clés existantes et le namespace
+des abonnements. Voir `docs/MIGRATION-RCCNEW.md`. La génération ne concerne
+qu'une toute première installation indépendante, jamais cette migration.
 
 Depuis le dossier du projet :
 

@@ -30,6 +30,7 @@
       const response = await fetch('/api/push/config', { cache: 'no-store' });
       if (!response.ok) return '';
       const config = await response.json();
+      if (config.enabled === false) return '';
       return config.publicKey || '';
     } catch (error) {
       return '';
@@ -94,7 +95,7 @@
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       });
-      if (response.status === 409) await removePushSubscription(subscription);
+      if (response.status === 409) setStatus('Synchronisation suspendue sur cet environnement. Abonnement conservé.', 'neutral');
     } catch (error) {
       // La sauvegarde locale reste valide si la synchronisation serveur est momentanément indisponible.
     }
@@ -308,6 +309,11 @@
 
   async function checkForLocalNotifications() {
     if (!isEnabled() || Notification.permission !== 'granted') return;
+    // Existing Web Push subscribers must not also receive foreground polling alerts.
+    if (supportsPush()) {
+      const registration = await navigator.serviceWorker.getRegistration().catch(() => null);
+      if (await registration?.pushManager?.getSubscription()) return;
+    }
     const seen = new Set(loadSeenItems());
     const items = await collectNotificationItems().catch((error) => {
       console.warn('[RCC notifications] Vérification locale impossible :', error);
@@ -371,7 +377,7 @@
 
   async function getRegistration() {
     const existing = await navigator.serviceWorker.getRegistration();
-    if (!existing) await navigator.serviceWorker.register('/sw.js', { scope: '/' });
+    if (!existing) await navigator.serviceWorker.register('/sw.js', { scope: '/', updateViaCache: 'none' });
     return navigator.serviceWorker.ready;
   }
 
@@ -396,6 +402,17 @@
   }
 
   async function enableNotifications() {
+    try {
+      const response = await fetch('/api/push/config', { cache: 'no-store' });
+      const config = response.ok ? await response.json() : null;
+      if (!config || config.enabled === false || (config.siteOrigin && config.siteOrigin !== SITE_ORIGIN)) {
+        setStatus('Activation disponible uniquement sur le domaine officiel. Aucun abonnement existant ne sera modifié.', 'neutral');
+        return;
+      }
+    } catch {
+      setStatus('Configuration push indisponible. Abonnement conservé.', 'neutral');
+      return;
+    }
     if (!supportsNotifications()) {
       setStatus('Ce navigateur ne supporte pas les notifications.', 'error');
       refreshDiagnostics();
@@ -438,8 +455,7 @@
         body: JSON.stringify(payload)
       }).catch(() => null);
       if (response && !response.ok) {
-        await removePushSubscription(subscription);
-        setStatus('Activez les notifications depuis le domaine officiel RCC.', 'error');
+        setStatus('Synchronisation impossible ici. Votre abonnement existant est conservé ; utilisez le domaine officiel RCC.', 'error');
         refreshDiagnostics();
         return;
       }
@@ -568,17 +584,9 @@
   async function migrateForeignOriginSubscription() {
     if (isTrustedPushOrigin()) return false;
 
-    if (supportsPush()) {
-      const registration = await navigator.serviceWorker.getRegistration().catch(() => null);
-      const subscription = registration ? await registration.pushManager.getSubscription().catch(() => null) : null;
-      await removePushSubscription(subscription);
-    } else {
-      localStorage.removeItem(SUBSCRIPTION_KEY);
-    }
-
     showPageNotice(
       'Notifications a reactiver',
-      `Cet ancien abonnement a été retiré. Ouvrez ${SITE_ORIGIN}/notifications.html pour réactiver les notifications RCC.`,
+      'Cet environnement ne permet pas le push. Votre abonnement est conservé ; utilisez le domaine officiel RCC.',
       'neutral'
     );
     return true;
@@ -594,7 +602,7 @@
     } catch (error) {
       stored = {};
     }
-    if (subscription && stored.enabled && stored.siteOrigin === SITE_ORIGIN) return;
+    if (subscription) return; // Same-origin installed PWAs keep their existing subscription.
 
     const lastPrompt = Number(localStorage.getItem(RESUBSCRIBE_PROMPT_KEY) || 0);
     if (Date.now() - lastPrompt < 30 * 24 * 60 * 60 * 1000) return;

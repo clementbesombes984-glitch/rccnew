@@ -83,6 +83,7 @@ requiredBannerKeys.forEach((key) => {
 
 globalThis.__RCC_TEST__ = true;
 globalThis.window = globalThis;
+globalThis.location = { origin: 'https://rccubzaguais.fr', protocol: 'https:', hostname: 'rccubzaguais.fr' };
 globalThis.document = { readyState: 'loading', addEventListener() {} };
 await import('../notification-categories.js');
 await import('../notifications.js');

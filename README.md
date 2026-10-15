@@ -32,7 +32,7 @@ Le projet utilise Pages CMS.
 
 1. Ouvrir https://app.pagescms.org
 2. Se connecter avec GitHub
-3. Choisir le dépôt `clementbesombes984-glitch/rcc2026`
+3. Choisir le dépôt `clementbesombes984-glitch/rccnew`
 4. Modifier les contenus déclarés dans `.pages.yml`
 
 ## Contenus éditables
