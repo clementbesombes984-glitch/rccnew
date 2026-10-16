@@ -74,6 +74,11 @@ assert.equal(response.headers.get('cache-control'),'no-store');
 assert.equal((await onRequestGet({env,request:new Request('https://preview.example/api/sporteasy-calendar?month=bad')})).status,400);
 const broken = await (await onRequestGet({env:{...env,RCC_SPORTEASY_KV:{get(){throw new Error('private');}}},request})).json();
 assert.equal(broken.events.length,0);assert.equal(broken.sources.filter(s=>!s.available).length,9);
+await syncCalendars(env,async()=>new Response(wrap(event().replace('SUMMARY:Match RCC','SUMMARY:Match modifié RCC'))),now);
+assert.equal(JSON.parse(kvData.get('calendar:M8')).events[0].title,'Match modifié RCC');
+assert.equal(JSON.parse(kvData.get('calendar:M8')).events.length,1);
+await syncCalendars(env,async()=>new Response(wrap(event('STATUS:CANCELLED'))),now);
+assert.equal(JSON.parse(kvData.get('calendar:M8')).events.length,0,'Explicit cancellations can remove the final event, unlike an unexpected empty feed');
 assert.equal(await readFile(new URL('../data/matches.json',import.meta.url),'utf8'),baseline);
 // Run the actual browser controller with a simulated DOM/API, not just model helpers.
 const nodes = new Map();
