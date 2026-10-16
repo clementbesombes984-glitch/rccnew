@@ -4,6 +4,7 @@
 vapid.local.txt
 vapid.json
 node_modules/
+.wrangler/
 .claude/
 *.bak
 *.bak.*

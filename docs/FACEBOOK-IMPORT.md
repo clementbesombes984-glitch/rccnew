@@ -161,6 +161,11 @@ sans intervention de l'administrateur.
 
 ## Tests et retour arrière
 
+Voir aussi `docs/DIAGNOSTIC-FACEBOOK-META.md` : correctif workerd du mode de
+redirection préparé sans activation. Le helper utilise manual et refuse les 3xx ;
+ne pas remplacer par follow, qui pourrait transmettre Authorization à une autre
+origine. Les logs n'incluent que des catégories/étapes et des codes numériques.
+
 `npm test`, `npm run validate`, `git diff --check`, compilation Functions et Worker
 en dry-run. Le test Facebook utilise une vraie SQLite locale en mémoire et un
 réseau simulé. Il vérifie notamment migration sans perte, idempotence, concurrence,

@@ -22,17 +22,44 @@ export function publicPost(row) {
     image: mediaUrl(row.image_url) || '' };
 }
 export class ImportError extends Error {
-  constructor(code) { super(code); this.code = code; }
+  constructor(code, diagnostics = {}) { super(code); this.code = code; this.diagnostics = diagnostics; }
 }
+const exceptionType = (error) => ['TypeError', 'Error', 'AbortError', 'TimeoutError', 'SyntaxError'].includes(error?.name) ? error.name : 'Other';
+const httpError = (status, code) => code === 190 || status === 401 ? 'meta_token_invalid'
+  : status === 429 || [4, 17, 32, 613].includes(code) ? 'meta_rate_limit'
+  : status === 403 ? 'meta_permission_denied' : status >= 500 ? 'meta_unavailable' : 'meta_denied';
 export async function graph(path, token, params = {}, fetcher = fetch) {
   const url = new URL(`https://graph.facebook.com/v25.0/${path}`);
   for (const [key, value] of Object.entries(params)) url.searchParams.set(key, value);
+  let init;
+  try {
+    init = { headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(15000), redirect: 'manual' };
+    // Validate construction separately: workerd rejects redirect:"error" before any network I/O.
+    new Request(url.href, init);
+  } catch (error) { throw new ImportError('meta_request_invalid', { stage: 'request', exceptionType: exceptionType(error) }); }
   let response;
-  try { response = await fetcher(url.href, { headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(15000), redirect: 'error' }); }
-  catch { throw new ImportError('meta_network'); }
+  try { response = await fetcher(url.href, init); }
+  catch (error) { throw new ImportError(['TimeoutError', 'AbortError'].includes(error?.name) ? 'meta_timeout' : 'meta_network',
+    { stage: 'transport', exceptionType: exceptionType(error) }); }
+  const status = response.status;
+  if (status >= 300 && status < 400) {
+    await response.body?.cancel().catch(() => {});
+    // Never follow Location or forward Authorization, even to another Meta endpoint.
+    throw new ImportError('meta_redirect', { stage: 'response', httpStatus: status });
+  }
   let data;
-  try { data = await response.json(); } catch { throw new ImportError('meta_response'); }
-  if (!response.ok || data.error) throw new ImportError(data.error?.code === 190 ? 'meta_token_invalid' : response.status === 429 ? 'meta_rate_limit' : 'meta_denied');
+  try { data = await response.json(); }
+  catch (error) {
+    const code = ['TimeoutError', 'AbortError'].includes(error?.name) ? 'meta_timeout' : !response.ok ? httpError(status) : 'meta_response';
+    throw new ImportError(code, { stage: 'body', httpStatus: status, exceptionType: exceptionType(error) });
+  }
+  if (!data || typeof data !== 'object' || Array.isArray(data)) throw new ImportError('meta_response', { stage: 'body', httpStatus: status });
+  if (!response.ok || data.error) {
+    const metaCode = Number.isSafeInteger(data.error?.code) ? data.error.code : undefined;
+    const metaSubcode = Number.isSafeInteger(data.error?.error_subcode) ? data.error.error_subcode : undefined;
+    throw new ImportError(httpError(status, metaCode), { stage: 'response', httpStatus: status,
+      ...(metaCode !== undefined ? { metaCode } : {}), ...(metaSubcode !== undefined ? { metaSubcode } : {}) });
+  }
   return data;
 }
 export function mediaUrl(value) {

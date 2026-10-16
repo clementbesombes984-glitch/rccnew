@@ -1,0 +1,4 @@
+# Local regression fixture only. No bindings, secrets, cron or remote resources.
+name = "local-facebook-runtime-check"
+main = "facebook-runtime-check.worker.js"
+compatibility_date = "2026-10-16"

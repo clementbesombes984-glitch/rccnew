@@ -2,7 +2,8 @@ import assert from 'node:assert/strict';
 import { DatabaseSync } from 'node:sqlite';
 import { readFile } from 'node:fs/promises';
 import vm from 'node:vm';
-import { PAGE_ID, UPSERT, eligible, normalizePost, syncFacebook, mediaUrl } from '../integrations/meta/facebook-import.js';
+import { PAGE_ID, UPSERT, eligible, normalizePost, syncFacebook, mediaUrl, graph } from '../integrations/meta/facebook-import.js';
+import syncWorker from '../workers/facebook-sync.js';
 import { onRequestGet as feed } from '../functions/api/facebook-news.js';
 
 const sql = new DatabaseSync(':memory:');
@@ -39,6 +40,8 @@ const fetcher = async (url, options) => {
   assert(String(url).startsWith('https://graph.facebook.com/v25.0/'));
   assert(!String(url).includes(env.RCC_FACEBOOK_PAGE_TOKEN));
   assert.equal(options.headers.Authorization, `Bearer ${env.RCC_FACEBOOK_PAGE_TOKEN}`);
+  assert.equal(options.redirect, 'manual');
+  new Request(url, options);
   return Response.json({ data: current });
 };
 assert.equal((await syncFacebook({})).status, 'disabled');
@@ -155,6 +158,52 @@ assert(articleFallback && imageRemoved);
 assert.equal(fallbackMark, 'RCC');
 assert(sandbox.window.testFacebook.facebookCardImage({ image: '' }, 'journal-image').includes('<strong>RCC</strong>'));
 assert(!calls.some((url) => /push|github|notifications/.test(url)));
+// HTTP failures, JavaScript failures, timeout and body decoding must not be conflated.
+for (const [status, payload, expected] of [
+  [401, { error: { code: 190, error_subcode: 463, message: 'do-not-log-secret' } }, 'meta_token_invalid'],
+  [403, { error: { code: 200, message: 'do-not-log-secret' } }, 'meta_permission_denied'],
+  [429, { error: { code: 4 } }, 'meta_rate_limit'],
+  [503, { error: { code: 2 } }, 'meta_unavailable'],
+  [400, { error: { code: 100 } }, 'meta_denied']
+]) {
+  await assert.rejects(() => graph(`${PAGE_ID}/posts`, 'fixture', {}, async () => Response.json(payload, { status })),
+    (error) => error.code === expected && error.diagnostics.httpStatus === status && !JSON.stringify(error).includes('do-not-log-secret'));
+}
+for (const status of [302, 307, 308]) {
+  let fetchCount = 0;
+  await assert.rejects(() => graph(`${PAGE_ID}/posts`, 'fixture', {}, async (_url, init) => {
+    fetchCount++;
+    assert.equal(init.redirect, 'manual');
+    return new Response(null, { status, headers: { Location: 'https://evil.invalid/?access_token=secret-must-not-leak' } });
+  }), (error) => error.code === 'meta_redirect' && error.diagnostics.httpStatus === status && !JSON.stringify(error).includes('secret-must-not-leak'));
+  assert.equal(fetchCount, 1);
+}
+await assert.rejects(() => graph(`${PAGE_ID}/posts`, 'fixture', {}, async () => new Response('<html>private detail</html>', { status: 502 })),
+  (error) => error.code === 'meta_unavailable' && error.diagnostics.httpStatus === 502);
+await assert.rejects(() => graph(`${PAGE_ID}/posts`, 'fixture', {}, async () => new Response('not json')),
+  (error) => error.code === 'meta_response' && error.diagnostics.stage === 'body');
+await assert.rejects(() => graph(`${PAGE_ID}/posts`, 'fixture', {}, async () => { throw new DOMException('secret', 'TimeoutError'); }),
+  (error) => error.code === 'meta_timeout' && error.diagnostics.exceptionType === 'TimeoutError');
+await assert.rejects(() => graph(`${PAGE_ID}/posts`, 'bad\r\nsecret', {}, async () => { throw new Error('Must not dispatch'); }),
+  (error) => error.code === 'meta_request_invalid' && error.diagnostics.stage === 'request');
+await assert.rejects(() => graph(`${PAGE_ID}/posts`, 'fixture', {}, async () => { const error = new Error('secret'); error.name = 'secret'; throw error; }),
+  (error) => error.code === 'meta_network' && error.diagnostics.exceptionType === 'Other');
+await assert.rejects(() => graph(`${PAGE_ID}/posts`, 'fixture', {}, async () => ({ status: 200, ok: true, json: async () => { throw new DOMException('secret', 'AbortError'); } })),
+  (error) => error.code === 'meta_timeout' && error.diagnostics.stage === 'body');
+// Worker logs contain only controlled classification/numeric diagnostics, never messages or URLs.
+const previousFetch = globalThis.fetch;
+const previousError = console.error;
+const errorLogs = [];
+try {
+  globalThis.fetch = async () => Response.json({ error: { code: 190, message: env.RCC_FACEBOOK_PAGE_TOKEN, error_data: 'https://example.invalid/?token=secret' } }, { status: 401 });
+  console.error = (value) => errorLogs.push(value);
+  let task;
+  await syncWorker.scheduled({}, env, { waitUntil(value) { task = value; } });
+  await task;
+} finally { globalThis.fetch = previousFetch; console.error = previousError; }
+assert.equal(JSON.parse(errorLogs[0]).diagnostics.httpStatus, 401);
+assert(!errorLogs.join('').includes(env.RCC_FACEBOOK_PAGE_TOKEN));
+assert(!errorLogs.join('').includes('example.invalid'));
 // Bounded Free-plan batches must eventually drain, not forever reimport the first 15.
 sql.exec('DELETE FROM facebook_posts');
 const backlog = Array.from({ length: 75 }, (_, i) => ({ ...post, id: `${PAGE_ID}_${1000 + i}` }));
