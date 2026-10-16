@@ -104,12 +104,24 @@ import { CATEGORY, TYPES, categoriesFor, typeFor, dayKeys, visible } from './cal
       const payload = await response.json();
       if (request !== requestNumber) return;
       if (!Array.isArray(payload.events)) throw new Error('invalid');
-      state.imported = payload.events.map(normalize).filter(Boolean);
-      if (status) status.textContent = payload.sources?.some(s => !s.available || s.stale) ? 'Certaines catégories conservent leurs dernières données disponibles.' : '';
+      if (payload.enabled && !payload.sources?.some(s => s.available)) throw new Error('unavailable');
+      const imported = new Map(payload.events.map(normalize).filter(Boolean).map(e => [e.id, e]));
+      const unavailable = new Set((payload.sources || []).filter(s => !s.available).map(s => s.category));
+      for (const old of state.imported) {
+        const categories = old.categories.filter(c => unavailable.has(c));
+        if (!categories.length) continue;
+        if (imported.has(old.id)) imported.get(old.id).categories = [...new Set([...imported.get(old.id).categories, ...categories])];
+        else imported.set(old.id, { ...old, categories, category: categories[0] });
+      }
+      state.imported = [...imported.values()];
+      if (status) {
+        status.textContent = payload.sources?.some(s => !s.available || s.stale) ? 'Certaines catégories conservent leurs dernières données disponibles.' : '';
+        status.hidden = !status.textContent;
+      }
       mergeEvents();
     } catch {
       if (request !== requestNumber) return;
-      if (status) status.textContent = 'Agenda SportEasy temporairement indisponible. Les événements déjà chargés restent consultables.';
+      if (status) { status.textContent = 'Agenda SportEasy temporairement indisponible. Les événements déjà chargés restent consultables.'; status.hidden = false; }
       mergeEvents();
     }
   }

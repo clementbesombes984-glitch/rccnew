@@ -1,8 +1,9 @@
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
+import vm from 'node:vm';
 import { parseCalendar, syncCalendars, CATEGORIES, publicText, eventType } from '../integrations/sporteasy/calendar.js';
 import { onRequestGet } from '../functions/api/sporteasy-calendar.js';
-import { categoriesFor, typeFor, dayKeys, visible } from '../calendar-model.js';
+import { CATEGORY, TYPES, categoriesFor, typeFor, dayKeys, visible } from '../calendar-model.js';
 const wrap = (...events) => `BEGIN:VCALENDAR\r\nVERSION:2.0\r\n${events.join('\r\n')}\r\nEND:VCALENDAR\r\n`;
 const event = (extra = '', uid = 'fixture') => `BEGIN:VEVENT\r\nUID:${uid}\r\nDTSTART:20261018T133000Z\r\nDTEND:20261018T150000Z\r\nSUMMARY:Match RCC\r\nLOCATION:Stade du Bourg\r\nDESCRIPTION:Contact secret@example.invalid 0612345678\r\nATTENDEE:mailto:private@example.invalid\r\n${extra}\r\nEND:VEVENT`;
 const now = Date.parse('2026-10-16T10:00:00Z');
@@ -18,9 +19,10 @@ assert.equal(parsed.events[0].start, '2026-10-18T13:30:00.000Z');
 assert.equal((await parseCalendar(wrap(event(), event('SEQUENCE:2')), 'M8', now)).events.length, 1);
 assert.equal((await parseCalendar(wrap(event('STATUS:CANCELLED')), 'M8', now)).events.length, 0);
 assert.equal((await parseCalendar(wrap(event('CLASS:PRIVATE')), 'M8', now)).withheld, 1);
-for (const privateValue of ['Contact 0612345678', 'Joueurs présents : Jean', 'test@example.invalid', 'https://example.invalid/private', 'Blessure du joueur']) assert.equal(publicText(privateValue), '');
+for (const privateValue of ['Contact 0612345678', 'Joueurs présents : Jean', 'Présences des membres', 'Absences des membres', 'test@example.invalid', 'https://example.invalid/private', 'Blessure du joueur']) assert.equal(publicText(privateValue), '');
 assert.equal(eventType('Information sans type'), 'unknown');
 assert.equal(eventType('Plateau M8'), 'other');
+assert.equal(eventType('PLATEAUX BLAYE'), 'other');
 assert.equal(eventType('Entraînement'), 'training');
 const recurrence = `BEGIN:VEVENT\r\nUID:weekly\r\nDTSTART;TZID=Europe/Paris:20261018T100000\r\nDTEND;TZID=Europe/Paris:20261018T110000\r\nRRULE:FREQ=WEEKLY;COUNT=3\r\nEXDATE;TZID=Europe/Paris:20261025T100000\r\nSUMMARY:Entraînement RCC\r\nEND:VEVENT`;
 const recurring = await parseCalendar(wrap(recurrence), 'M6', now);
@@ -73,4 +75,25 @@ assert.equal((await onRequestGet({env,request:new Request('https://preview.examp
 const broken = await (await onRequestGet({env:{...env,RCC_SPORTEASY_KV:{get(){throw new Error('private');}}},request})).json();
 assert.equal(broken.events.length,0);assert.equal(broken.sources.filter(s=>!s.available).length,9);
 assert.equal(await readFile(new URL('../data/matches.json',import.meta.url),'utf8'),baseline);
+// Run the actual browser controller with a simulated DOM/API, not just model helpers.
+const nodes = new Map();
+const node = key => {if(!nodes.has(key))nodes.set(key,{innerHTML:'',textContent:'',hidden:true,handlers:{},addEventListener(type,fn){this.handlers[type]=fn;}});return nodes.get(key);};
+const document = {querySelector:node,addEventListener(){}};
+let apiFailure = false;
+const browser = {CATEGORY,TYPES,categoriesFor,typeFor,dayKeys,visible,document,Intl,AbortSignal,console,
+  Date:class extends Date {constructor(...args){super(...(args.length?args:[now]));}},
+  fetch:async url=>url.startsWith('./data/') ? Response.json({matches:[{id:'manual',date:'2026-10-18',team:'M8',title:'Manual preserved'}]}) : Response.json(apiFailure ?
+    {enabled:true,events:[],sources:CATEGORIES.map(category=>({category,available:false}))} :
+    {enabled:true,events:[{...parsed.events[0],title:'<img onerror=private>',categories:['M8']}],sources:CATEGORIES.map(category=>({category,available:true}))})};
+const controller=(await readFile(new URL('../calendar-view.js',import.meta.url),'utf8')).replace(/^import[^\n]+\n/,'');
+vm.runInNewContext(controller,browser);
+await new Promise(setImmediate);
+assert(node('[data-calendar-grid]').innerHTML.includes('Manual preserved'));
+assert(node('[data-calendar-grid]').innerHTML.includes('&lt;img onerror=private&gt;'));
+assert(!node('[data-calendar-grid]').innerHTML.includes('<img'));
+apiFailure=true;
+node('[data-calendar-today]').handlers.click();
+await new Promise(setImmediate);
+assert(node('[data-calendar-grid]').innerHTML.includes('Manual preserved'));
+assert(node('[data-calendar-grid]').innerHTML.includes('&lt;img onerror=private&gt;'),'API outage retains previously loaded imported events');
 console.log('SportEasy: neuf catégories, filtres, UTC/DST, récurrences/exceptions/annulations, multi-jours, doublons, confidentialité, reprise et API : OK. Réseau simulé, aucun push.');

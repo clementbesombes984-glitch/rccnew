@@ -111,10 +111,14 @@ Déployer Pages depuis une archive Git propre (pas les fichiers locaux non suivi
 jamais depuis une copie contenant une configuration privée :
 
 ```text
-npx wrangler pages deploy . --config wrangler.sporteasy-preview.toml --project-name rccnew --branch codex/sporteasy-calendar
+# Dans l'archive temporaire UNIQUEMENT : copier wrangler.sporteasy-preview.toml
+# sous le nom wrangler.toml, puis :
+npx wrangler pages deploy . --project-name rccnew --branch codex/sporteasy-calendar
 ```
 
-Ne jamais employer `main` ou le domaine officiel. Les commits `[CF-Pages-Skip]`
+Wrangler Pages refuse un chemin de configuration personnalisé dans la version
+utilisée : le renommage ne concerne que le paquet temporaire, JAMAIS wrangler.toml
+Production du dépôt. Ne jamais employer `main` ou le domaine officiel. Les commits `[CF-Pages-Skip]`
 évitent le déploiement automatique lors du push ; publication Preview explicite.
 Retour arrière : désactiver uniquement les flags SportEasy ou utiliser la version
 précédente de cette Preview ; ne supprimer ni KV, ni JSON, ni article Facebook.
@@ -126,7 +130,7 @@ Accès réels HTTP 200 et normalisation initiale autorisée vers KV Preview :
 | Catégorie | VEVENT | Événements stockés |
 | --- | ---: | ---: |
 | M6 | 38 | 38 |
-| M8 | 79 | 79 |
+| M8 | 78 | 78 |
 | M10 | 31 | 31 |
 | M12 | 33 | 33 |
 | M14 | 49 | 49 |
@@ -134,7 +138,12 @@ Accès réels HTTP 200 et normalisation initiale autorisée vers KV Preview :
 | M19 | 10 | 10 |
 | Cadettes | 35 | 35 |
 | Seniors | 113 | 113 |
-| Total | 487 | 487 |
+| Total | 486 | 486 |
+
+Premier contrôle : 487 événements (M8 : 79). Lors de l'actualisation initiale à
+16:19 UTC, le flux M8 contenait lui-même 78 VEVENT ; le total est donc passé à 486.
+Aucun événement JSON manuel n'a été supprimé. Ne pas attribuer cette variation
+à une annulation précise sans preuve fournie par la source.
 
 Ces flux réels sont en UTC, sans RRULE. Les récurrences, exceptions, changement
 d'heure, multi-jours, panne et flux vide sont testés sur fixtures, pas revendiqués

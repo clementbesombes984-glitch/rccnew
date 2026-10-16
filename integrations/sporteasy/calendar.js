@@ -6,7 +6,7 @@ export function eventType(value) {
   const s = text(value);
   if (/\b(entrainement|training|entrainements)\b/.test(s)) return 'training';
   if (/\b(match|matches|matchs|championnat|vs)\b|🆚/.test(s)) return 'match';
-  if (/\b(plateau|tournoi|stage|reunion|repas|fete|assemblee|evenement)\b/.test(s)) return 'other';
+  if (/\b(plateaux?|tournois?|stages?|reunions?|repas|fetes?|assemblees?|evenements?|ateliers?|rassemblements?)\b/.test(s)) return 'other';
   return 'unknown';
 }
 // Only scheduling fields are eligible. Never copy DESCRIPTION, ATTENDEE, ORGANIZER,
@@ -14,7 +14,7 @@ export function eventType(value) {
 export function publicText(value, limit = 240) {
   const s = String(value || '').replace(/<[^>]*>/g, '').replace(/[\u0000-\u001f\u007f]/g, ' ').trim();
   if (s.length > limit || /https?:|webcal:|www\.|@|(?:\+\d|\b0[1-9])(?:[ .()-]*\d){8,}|(?:calendar|app)\.sporteasy|\b(?:token|password|secret)\b/i.test(s) ||
-      /\b(?:joueurs?|participants?|convoqu[eé]s?|pr[eé]sen[ct]|absen[ct]|bless(?:ure|[eé])|m[eé]dical|t[eé]l[eé]phone|covoiturage|contact|priv[eé])\b/i.test(s)) return '';
+      /\b(?:joueurs?|participants?|convoqu[eé]s?|pr[eé]sen(?:ce|t[se]?)s?|absen(?:ce|t[se]?)s?|bless(?:ures?|[eé]s?)|m[eé]dical|t[eé]l[eé]phone|covoiturage|contact|priv[eé]e?s?)\b/i.test(s)) return '';
   return s;
 }
 const epoch = (time, component) => {
@@ -135,13 +135,13 @@ export async function syncCalendars(env, fetcher = fetch, now = Date.now()) {
       const key = `calendar:${category}`;
       const old = await env.RCC_SPORTEASY_KV.get(key, 'json');
       const day = new Date(now).toISOString().slice(0, 10);
-      if (old?.hash === hash && old.expandedDay === day) {
+      if (old?.formatVersion === 1 && old.hash === hash && old.expandedDay === day) {
         await env.RCC_SPORTEASY_KV.put(`checked:${category}`, JSON.stringify({ checkedAt: new Date(now).toISOString() }));
         results.push({ category, status: 'unchanged', events: old.events.length, raw: old.rawCount });
         continue;
       }
       const parsed = await parseCalendar(body, category, now);
-      await env.RCC_SPORTEASY_KV.put(key, JSON.stringify({ ...parsed, hash, expandedDay: day, syncedAt: new Date(now).toISOString() }));
+      await env.RCC_SPORTEASY_KV.put(key, JSON.stringify({ ...parsed, formatVersion: 1, hash, expandedDay: day, syncedAt: new Date(now).toISOString() }));
       results.push({ category, status: 'ok', events: parsed.events.length, raw: parsed.rawCount, withheld: parsed.withheld, cancelled: parsed.cancelled });
     } catch {
       // Deliberately no exception message, URL, ICS or personal fields in logs.

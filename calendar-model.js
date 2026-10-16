@@ -21,7 +21,7 @@ export function typeFor(raw) {
   const s = `${raw.type_evenement || raw.type || raw.eventType || raw.kind || raw.nature || ''} ${raw.title || raw.titre || ''}`.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
   if (/entrainement|training/.test(s)) return 'training';
   if (/\b(match|championnat|vs)\b/.test(s)) return 'match';
-  return /plateau|tournoi|stage|reunion|repas|fete|evenement/.test(s) ? 'other' : 'unknown';
+  return /plateau|tournoi|stage|reunion|repas|fete|evenement|atelier|rassemblement/.test(s) ? 'other' : 'unknown';
 }
 const parisDayFormatter = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Paris', year: 'numeric', month: '2-digit', day: '2-digit' });
 export const parisDay = value => parisDayFormatter.format(new Date(value));
