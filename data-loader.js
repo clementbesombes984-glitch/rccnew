@@ -133,6 +133,7 @@
 
   // Facebook is a separate read-only source; notification polling still uses news.json only.
   const facebookState = { news: [], next: 0, loaded: false, unavailable: false };
+  let initialFacebookLoad;
   async function loadFacebookPage() {
     try {
       const response = await fetch(`/api/facebook-news?limit=20&offset=${facebookState.next || 0}`, {
@@ -150,7 +151,7 @@
     facebookState.loaded = true;
   }
   async function combinedNews(requestedId = '') {
-    const [manual] = await Promise.all([fetchData('news'), facebookState.loaded ? null : loadFacebookPage()]);
+    const [manual] = await Promise.all([fetchData('news'), facebookState.loaded ? null : (initialFacebookLoad ||= loadFacebookPage())]);
     let imported = facebookState.news;
     if (requestedId.startsWith('facebook-') && !imported.some((item) => item.id === requestedId)) {
       try {
@@ -158,8 +159,14 @@
         if (response.ok) imported = [...imported, ...(await response.json()).news];
       } catch { /* Manual articles remain available. */ }
     }
-    return [...(Array.isArray(manual) ? manual : manual.news || []), ...imported];
+    const unique = new Map();
+    [...(Array.isArray(manual) ? manual : manual.news || []), ...imported].forEach((item, index) => {
+      const id = newsId(item, index);
+      if (!unique.has(id)) unique.set(id, item);
+    });
+    return [...unique.values()];
   }
+  window.RCCNews = Object.freeze({ load: combinedNews });
   function facebookLink(item) {
     try {
       const url = new URL(item.facebookUrl);

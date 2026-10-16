@@ -6,7 +6,7 @@
 
   const formatDate = (value) => {
     if (!value) return '';
-    const date = new Date(`${value}T12:00:00`);
+    const date = new Date(/^\d{4}-\d{2}-\d{2}$/.test(value) ? `${value}T12:00:00` : value);
     if (Number.isNaN(date.getTime())) return '';
     return new Intl.DateTimeFormat('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' }).format(date);
   };
@@ -98,12 +98,10 @@
     let paused = false;
 
     try {
-      const response = await fetch('./data/news.json', { cache: 'no-store' });
-      if (!response.ok) throw new Error(`news.json (${response.status})`);
-      const data = await response.json();
-      articles = (Array.isArray(data) ? data : (data.news || []))
+      const data = await window.RCCNews.load();
+      articles = data
         .filter((article) => article.published !== false)
-        .sort((a, b) => String(b.date || '').localeCompare(String(a.date || '')))
+        .sort((a, b) => (Date.parse(b.date) || 0) - (Date.parse(a.date) || 0))
         .slice(0, 3);
     } catch (error) {
       console.warn('[RCC redesign] Hero actualités indisponible.', error.message);
