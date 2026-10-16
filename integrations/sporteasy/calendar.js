@@ -61,9 +61,20 @@ export async function parseCalendar(ics, category, now = Date.now()) {
     if (!old || +(c.getFirstPropertyValue('sequence') || 0) >= +(old.getFirstPropertyValue('sequence') || 0)) revisions.set(key, c);
   }
   const selected = [...revisions.values()];
+  const masters = new Set();
+  const exceptionsByUid = new Map();
+  for (const component of selected) {
+    const uid = component.getFirstPropertyValue('uid');
+    if (!component.hasProperty('recurrence-id')) masters.add(uid);
+    else {
+      if (!exceptionsByUid.has(uid)) exceptionsByUid.set(uid, []);
+      exceptionsByUid.get(uid).push(component);
+    }
+  }
+  if ([...exceptionsByUid.keys()].some(uid => !masters.has(uid))) throw new Error('orphan_exception');
   for (const c of selected.filter(c => !c.hasProperty('recurrence-id'))) {
     const uid = c.getFirstPropertyValue('uid');
-    const exceptions = selected.filter(e => e.hasProperty('recurrence-id') && e.getFirstPropertyValue('uid') === uid);
+    const exceptions = exceptionsByUid.get(uid) || [];
     if (c.getFirstPropertyValue('status') === 'CANCELLED') { cancelled++; continue; }
     const event = new ICAL.Event(c, { exceptions });
     const recurring = event.isRecurring();
@@ -92,7 +103,7 @@ export async function parseCalendar(ics, category, now = Date.now()) {
     }
   }
   // A series exception without its master cannot be expanded safely. Keep last valid data.
-  if (selected.some(c => c.hasProperty('recurrence-id') && !selected.some(m => !m.hasProperty('recurrence-id') && m.getFirstPropertyValue('uid') === c.getFirstPropertyValue('uid')))) throw new Error('orphan_exception');
+  // Master/exception membership was validated once above, without quadratic scans.
   const unique = new Map();
   for (const r of records) {
     const hash = await r.uidHash;
@@ -133,15 +144,24 @@ export async function syncCalendars(env, fetcher = fetch, now = Date.now()) {
       const body = new TextDecoder().decode(await new Blob(chunks).arrayBuffer());
       const hash = await digest(body);
       const key = `calendar:${category}`;
-      const old = await env.RCC_SPORTEASY_KV.get(key, 'json');
+      // Read small metadata first: unchanged feeds need no JSON decoding of all events.
+      // Older snapshots (and KV adapters without metadata) keep the original safe path.
+      let old;
+      if (typeof env.RCC_SPORTEASY_KV.getWithMetadata === 'function') {
+        const cached = await env.RCC_SPORTEASY_KV.getWithMetadata(key, 'text');
+        old = cached.metadata;
+        if (!old && cached.value) old = JSON.parse(cached.value);
+      } else old = await env.RCC_SPORTEASY_KV.get(key, 'json');
       const day = new Date(now).toISOString().slice(0, 10);
       if (old?.formatVersion === 1 && old.hash === hash && old.expandedDay === day) {
         await env.RCC_SPORTEASY_KV.put(`checked:${category}`, JSON.stringify({ checkedAt: new Date(now).toISOString() }));
-        results.push({ category, status: 'unchanged', events: old.events.length, raw: old.rawCount });
+        results.push({ category, status: 'unchanged', events: old.eventCount ?? old.events.length, raw: old.rawCount });
         continue;
       }
       const parsed = await parseCalendar(body, category, now);
-      await env.RCC_SPORTEASY_KV.put(key, JSON.stringify({ ...parsed, formatVersion: 1, hash, expandedDay: day, syncedAt: new Date(now).toISOString() }));
+      await env.RCC_SPORTEASY_KV.put(key, JSON.stringify({ ...parsed, formatVersion: 1, hash, expandedDay: day, syncedAt: new Date(now).toISOString() }), {
+        metadata: { formatVersion: 1, hash, expandedDay: day, eventCount: parsed.events.length, rawCount: parsed.rawCount }
+      });
       results.push({ category, status: 'ok', events: parsed.events.length, raw: parsed.rawCount, withheld: parsed.withheld, cancelled: parsed.cancelled });
     } catch {
       // Deliberately no exception message, URL, ICS or personal fields in logs.

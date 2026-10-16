@@ -86,7 +86,7 @@ export async function syncFacebook(env, fetcher = fetch) {
   const owner = crypto.randomUUID();
   const started = Date.now();
   const stats = { received: 0, matching: 0, rejected: 0, examined: 0, pages: 0,
-    rechecked: 0, created: 0, updated: 0 };
+    rechecked: 0, created: 0, updated: 0, unchanged: 0 };
   const lock = await db.prepare(`INSERT INTO facebook_sync_lock(id,owner,expires_at) VALUES(1,?,?)
     ON CONFLICT(id) DO UPDATE SET owner=excluded.owner,expires_at=excluded.expires_at
     WHERE facebook_sync_lock.expires_at < ?`).bind(owner, started + 540000, started).run();
@@ -127,9 +127,10 @@ export async function syncFacebook(env, fetcher = fetch) {
     // Read identity/check order first, so irrelevant posts never parse dates, URLs or titles.
     // Include known IDs without a marker: removing the marker must still deactivate them.
     const ids = [...posts.keys()].filter((id) => pagePostId.test(id));
-    const existing = ids.length ? await db.prepare(`SELECT facebook_id,checked_at FROM facebook_posts
+    const existing = ids.length ? await db.prepare(`SELECT facebook_id,checked_at,title,body,published_at,permalink,image_url,active FROM facebook_posts
       WHERE facebook_id IN (${ids.map(() => '?').join(',')})`).bind(...ids).all() : { results: [] };
     const previous = new Map(existing.results.map((row) => [row.facebook_id, row.checked_at]));
+    const stored = new Map(existing.results.map(row => [row.facebook_id, row]));
     const candidates = [];
     const now = Date.now();
     for (const source of posts.values()) {
@@ -150,6 +151,16 @@ export async function syncFacebook(env, fetcher = fetch) {
       if (Date.now() - started > 240000) { more = true; break; }
       // Store only a validated CDN URL, never the Page token or a fetched image.
       const imageUrl = post.active && !post.imageUrl.includes(env.RCC_FACEBOOK_PAGE_TOKEN) ? post.imageUrl : '';
+      const old = stored.get(post.id);
+      if (old && old.title === post.title && old.body === post.body && old.published_at === post.date &&
+          old.permalink === post.permalink && old.image_url === imageUrl && old.active === post.active) {
+        // Preserve rotation and fencing without rewriting unchanged text/media columns.
+        const check = await db.prepare(`UPDATE facebook_posts SET checked_at=? WHERE facebook_id=?
+          AND EXISTS(SELECT 1 FROM facebook_sync_lock WHERE id=1 AND owner=? AND expires_at>?)`)
+          .bind(new Date().toISOString(), post.id, owner, Date.now()).run();
+        stats.unchanged += check.meta.changes;
+        continue;
+      }
       const write = await db.prepare(UPSERT).bind(post.id, PAGE_ID, post.title, post.body, post.date,
         post.permalink, imageUrl, post.active, new Date().toISOString(), owner, Date.now()).run();
       imported += write.meta.changes;

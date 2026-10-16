@@ -79,6 +79,24 @@ assert.equal(JSON.parse(kvData.get('calendar:M8')).events[0].title,'Match modifi
 assert.equal(JSON.parse(kvData.get('calendar:M8')).events.length,1);
 await syncCalendars(env,async()=>new Response(wrap(event('STATUS:CANCELLED'))),now);
 assert.equal(JSON.parse(kvData.get('calendar:M8')).events.length,0,'Explicit cancellations can remove the final event, unlike an unexpected empty feed');
+// Metadata fast path, legacy fallback and daily expansion remain equivalent.
+const metadata = new Map();
+const fastKv = {
+  get: kv.get,
+  async getWithMetadata(key) { return { value: kvData.get(key) || null, metadata: metadata.get(key) || null }; },
+  async put(key, value, options) { await kv.put(key, value); if (options?.metadata) metadata.set(key, options.metadata); }
+};
+const fastEnv = {...env, RCC_SPORTEASY_KV: fastKv};
+const firstFast = await syncCalendars(fastEnv, fetcher, now);
+assert(firstFast.results.every(r => r.status === 'ok'));
+assert.equal(metadata.size, 9);
+const savedWrites = writes;
+const secondFast = await syncCalendars(fastEnv, fetcher, now);
+assert(secondFast.results.every(r => r.status === 'unchanged' && r.events === 1));
+assert.equal(writes, savedWrites);
+const nextDayFast = await syncCalendars(fastEnv, fetcher, now + 86400000);
+assert(nextDayFast.results.every(r => r.status === 'ok'));
+assert.equal(writes, savedWrites + 9);
 assert.equal(await readFile(new URL('../data/matches.json',import.meta.url),'utf8'),baseline);
 // Run the actual browser controller with a simulated DOM/API, not just model helpers.
 const nodes = new Map();

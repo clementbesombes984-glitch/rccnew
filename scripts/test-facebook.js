@@ -52,7 +52,7 @@ assert.deepEqual([firstSync.received, firstSync.examined, firstSync.matching, fi
   firstSync.created, firstSync.updated], [2, 2, 1, 1, 1, 1, 0]);
 assert(Number.isFinite(firstSync.durationMs) && firstSync.durationMs >= 0);
 const secondSync = await syncFacebook({ ...env, RCC_FACEBOOK_DB: d1() }, fetcher); // restarted importer, same persistent store
-assert.deepEqual([secondSync.created, secondSync.updated, secondSync.processed], [0, 1, 1]);
+assert.deepEqual([secondSync.created, secondSync.updated, secondSync.processed, secondSync.unchanged], [0, 0, 0, 1]);
 // Repeated marker tests cannot retain the lastIndex of a global regexp.
 for (let i = 0; i < 100; i++) assert(eligible('#ActuRCC'));
 // Irrelevant posts must not pay for permalink/image/date/title normalization.
