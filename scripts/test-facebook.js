@@ -26,6 +26,8 @@ function d1() {
 }
 const env = { RCC_FACEBOOK_DB: d1(), RCC_FACEBOOK_SYNC_ENABLED: 'true',
   RCC_FACEBOOK_READ_ENABLED: 'true', RCC_FACEBOOK_PAGE_TOKEN: 'fixture-not-a-real-token' };
+const manualNews = await readFile(new URL('../data/news.json', import.meta.url), 'utf8');
+assert.equal(JSON.parse(manualNews).news.length, 13, 'Keep the 13 existing manual articles');
 const post = { id: `${PAGE_ID}_123`, message: 'Victoire RCC !\nTexte complet #ActuRCC', created_time: '2026-10-15T10:00:00+0000', permalink_url: 'https://www.facebook.com/example/posts/123' };
 for (const text of ['#ActuRCC', '#acturcc', '#ACTURCC', 'Bonjour (#ActuRCC)']) assert(eligible(text));
 for (const text of ['#ActuRCCbis', '#ActuRCC2026', 'mot#ActuRCC', '#ActuRCCé', 'RCC']) assert(!eligible(text));
@@ -45,8 +47,23 @@ const fetcher = async (url, options) => {
   return Response.json({ data: current });
 };
 assert.equal((await syncFacebook({})).status, 'disabled');
-await syncFacebook(env, fetcher);
-await syncFacebook({ ...env, RCC_FACEBOOK_DB: d1() }, fetcher); // restarted importer, same persistent store
+const firstSync = await syncFacebook(env, fetcher);
+assert.deepEqual([firstSync.received, firstSync.examined, firstSync.matching, firstSync.rejected, firstSync.pages,
+  firstSync.created, firstSync.updated], [2, 2, 1, 1, 1, 1, 0]);
+assert(Number.isFinite(firstSync.durationMs) && firstSync.durationMs >= 0);
+const secondSync = await syncFacebook({ ...env, RCC_FACEBOOK_DB: d1() }, fetcher); // restarted importer, same persistent store
+assert.deepEqual([secondSync.created, secondSync.updated, secondSync.processed], [0, 1, 1]);
+// Repeated marker tests cannot retain the lastIndex of a global regexp.
+for (let i = 0; i < 100; i++) assert(eligible('#ActuRCC'));
+// Irrelevant posts must not pay for permalink/image/date/title normalization.
+const irrelevant = { id: `${PAGE_ID}_999`, message: 'Sans marqueur',
+  get permalink_url() { throw new Error('Unnecessary URL work'); },
+  get full_picture() { throw new Error('Unnecessary image work'); },
+  get created_time() { throw new Error('Unnecessary date work'); } };
+const filtered = await syncFacebook(env, async (url) => String(url).includes('/posts?') ?
+  { status: 200, ok: true, json: async () => ({ data: [post, irrelevant] }) } : Response.json(post));
+assert.equal(filtered.rejected, 1);
+assert.equal(filtered.examined, 2);
 assert.equal(sql.prepare('SELECT count(*) n FROM facebook_posts').get().n, 1);
 const fenced = await env.RCC_FACEBOOK_DB.prepare(UPSERT).bind(post.id, PAGE_ID, 'stale', 'stale',
   new Date().toISOString(), post.permalink_url, '', 1, new Date().toISOString(), 'expired-owner', Date.now()).run();
@@ -59,7 +76,8 @@ current = [{ ...post, message: 'Texte modifié #ACTURCC' }];
 await syncFacebook(env, fetcher);
 assert.equal(sql.prepare('SELECT body FROM facebook_posts').get().body, 'Texte modifié');
 current = [{ ...post, message: 'Hashtag retiré' }];
-await syncFacebook(env, fetcher);
+const withdrawn = await syncFacebook(env, fetcher);
+assert.deepEqual([withdrawn.matching, withdrawn.rejected, withdrawn.updated], [0, 0, 1]);
 assert.equal(sql.prepare('SELECT active FROM facebook_posts').get().active, 0);
 current = [post];
 await syncFacebook(env, fetcher);
@@ -81,7 +99,8 @@ current = [{ ...post, full_picture: firstImage }];
 await syncFacebook(env, fetcher);
 assert.equal(sql.prepare('SELECT image_url FROM facebook_posts').get().image_url, firstImage);
 current = [{ ...post, full_picture: 'https://scontent.fbcdn.net/photo.jpg?oe=renewed' }];
-await syncFacebook(env, fetcher);
+const renewedImage = await syncFacebook(env, fetcher);
+assert.deepEqual([renewedImage.created, renewedImage.updated], [0, 1]);
 assert.equal(sql.prepare('SELECT image_url FROM facebook_posts').get().image_url, current[0].full_picture);
 current = [{ ...post, full_picture: `https://scontent.fbcdn.net/${env.RCC_FACEBOOK_PAGE_TOKEN}` }];
 await syncFacebook(env, fetcher);
@@ -204,6 +223,43 @@ try {
 assert.equal(JSON.parse(errorLogs[0]).diagnostics.httpStatus, 401);
 assert(!errorLogs.join('').includes(env.RCC_FACEBOOK_PAGE_TOKEN));
 assert(!errorLogs.join('').includes('example.invalid'));
+assert.equal(JSON.parse(errorLogs[0]).received, 0);
+assert.equal(JSON.parse(errorLogs[0]).created, 0);
+assert(Number.isFinite(JSON.parse(errorLogs[0]).durationMs));
+// Storage errors remain sanitized, preserve existing articles and release the lease.
+const beforeFailure = sql.prepare('SELECT count(*) n FROM facebook_posts').get().n;
+const brokenDb = { prepare(query) {
+  if (query.startsWith('SELECT facebook_id FROM')) throw new Error('private database details');
+  return env.RCC_FACEBOOK_DB.prepare(query);
+} };
+await assert.rejects(() => syncFacebook({ ...env, RCC_FACEBOOK_DB: brokenDb }, fetcher),
+  error => error.code === 'storage_or_internal' && error.stats.pages === 1 && !JSON.stringify(error).includes('private'));
+assert.equal(sql.prepare('SELECT count(*) n FROM facebook_posts').get().n, beforeFailure);
+assert.equal(sql.prepare('SELECT count(*) n FROM facebook_sync_lock').get().n, 0);
+const writeFailure = { prepare(query) {
+  if (query.startsWith('INSERT INTO facebook_posts')) throw new Error('private write failure');
+  return env.RCC_FACEBOOK_DB.prepare(query);
+} };
+await assert.rejects(() => syncFacebook({ ...env, RCC_FACEBOOK_DB: writeFailure }, fetcher),
+  error => error.code === 'storage_or_internal' && error.stats.created === 0 && !JSON.stringify(error).includes('private'));
+assert.equal(sql.prepare('SELECT count(*) n FROM facebook_posts').get().n, beforeFailure);
+assert.equal(sql.prepare('SELECT count(*) n FROM facebook_sync_lock').get().n, 0);
+const successLogs = [];
+const previousLog = console.log;
+try {
+  globalThis.fetch = fetcher;
+  console.log = value => successLogs.push(value);
+  let task;
+  await syncWorker.scheduled({}, env, { waitUntil(value) { task = value; } });
+  await task;
+} finally { globalThis.fetch = previousFetch; console.log = previousLog; }
+const successLog = JSON.parse(successLogs[0]);
+assert.equal(successLog.status, 'ok');
+for (const field of ['received', 'matching', 'rejected', 'examined', 'pages', 'rechecked', 'created', 'updated', 'durationMs'])
+  assert(Number.isFinite(successLog[field]), field);
+assert.equal(successLog.processed, successLog.created + successLog.updated);
+assert(!successLogs.join('').includes(env.RCC_FACEBOOK_PAGE_TOKEN));
+assert(!successLogs.join('').includes('https://'));
 // Bounded Free-plan batches must eventually drain, not forever reimport the first 15.
 sql.exec('DELETE FROM facebook_posts');
 const backlog = Array.from({ length: 75 }, (_, i) => ({ ...post, id: `${PAGE_ID}_${1000 + i}` }));
@@ -217,8 +273,15 @@ for (let pass = 0; pass < 5; pass++) {
       ...(page < 2 ? { paging: { next: 'ignored-not-followed', cursors: { after: String(page + 1) } } } : {}) });
   });
   assert.equal(result.processed, 15);
+  assert.equal(result.received, 75);
+  assert.equal(result.examined, 75);
+  assert.equal(result.matching, 75);
+  assert.equal(result.pages, 3);
+  assert.equal(result.created, 15);
+  assert.equal(result.updated, 0);
   assert(queryCount + externalCount < 50, 'Bound D1 and network subrequests for Workers Free');
   assert.equal(sql.prepare('SELECT count(*) n FROM facebook_posts').get().n, (pass + 1) * 15);
 }
+assert.equal(await readFile(new URL('../data/news.json', import.meta.url), 'utf8'), manualNews);
 sql.close();
 console.log('Facebook sans R2 : migration additive, hashtag, SQLite idempotence/concurrence, images absentes/expirées/renouvelées, token, API, repli manuel et XSS : OK. Aucun appel distant ni push.');

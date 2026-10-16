@@ -1,9 +1,11 @@
 // Inbound only. No GitHub, push, subscriptions or publishing credentials.
 export const PAGE_ID = '1131153776758221';
 const marker = () => /(?<![\p{L}\p{M}\p{N}_])#acturcc(?![\p{L}\p{M}\p{N}_])/giu;
-export const eligible = (text) => marker().test(String(text || ''));
-export function normalizePost(post, now = Date.now()) {
-  if (!post || !new RegExp(`^${PAGE_ID}_\\d+$`).test(post.id || '') || post.is_published === false) return null;
+const markerTest = /(?<![\p{L}\p{M}\p{N}_])#acturcc(?![\p{L}\p{M}\p{N}_])/iu;
+const pagePostId = new RegExp(`^${PAGE_ID}_\\d+$`);
+export const eligible = (text) => typeof text === 'string' && markerTest.test(text);
+export function normalizePost(post, now = Date.now(), active = eligible(post?.message)) {
+  if (!post || !pagePostId.test(post.id || '') || post.is_published === false) return null;
   const date = Date.parse(post.created_time);
   if (!Number.isFinite(date) || date > now) return null;
   let link;
@@ -13,7 +15,7 @@ export function normalizePost(post, now = Date.now()) {
   const firstLine = body.split(/\r?\n/).find((line) => line.trim())?.trim() || '';
   const title = firstLine.length > 110 ? firstLine.slice(0, 109).trimEnd() + '…' : firstLine;
   return { id: post.id, title: title || 'Publication Facebook', body, date: new Date(date).toISOString(),
-    permalink: link.href, active: eligible(post.message) ? 1 : 0, imageUrl: mediaUrl(post.full_picture) || '' };
+    permalink: link.href, active: active ? 1 : 0, imageUrl: mediaUrl(post.full_picture) || '' };
 }
 export function publicPost(row) {
   return { id: `facebook-${row.facebook_id}`, source: 'facebook', title: row.title, body: row.body,
@@ -63,9 +65,10 @@ export async function graph(path, token, params = {}, fetcher = fetch) {
   return data;
 }
 export function mediaUrl(value) {
+  if (typeof value !== 'string' || !value || value.length > 4096) return null;
   try {
     const url = new URL(value);
-    return String(value).length <= 4096 && url.protocol === 'https:' && !url.username && !url.password && !url.port && !url.hash &&
+    return url.protocol === 'https:' && !url.username && !url.password && !url.port && !url.hash &&
       ![...url.searchParams.keys()].some((key) => /token|appsecret|authorization/i.test(key)) &&
       ['fbcdn.net', 'fbsbx.com'].some((host) => url.hostname === host || url.hostname.endsWith(`.${host}`)) ? url.href : null;
   } catch { return null; }
@@ -82,6 +85,8 @@ export async function syncFacebook(env, fetcher = fetch) {
   const db = env.RCC_FACEBOOK_DB;
   const owner = crypto.randomUUID();
   const started = Date.now();
+  const stats = { received: 0, matching: 0, rejected: 0, examined: 0, pages: 0,
+    rechecked: 0, created: 0, updated: 0 };
   const lock = await db.prepare(`INSERT INTO facebook_sync_lock(id,owner,expires_at) VALUES(1,?,?)
     ON CONFLICT(id) DO UPDATE SET owner=excluded.owner,expires_at=excluded.expires_at
     WHERE facebook_sync_lock.expires_at < ?`).bind(owner, started + 540000, started).run();
@@ -94,6 +99,8 @@ export async function syncFacebook(env, fetcher = fetch) {
       const data = await graph(`${PAGE_ID}/posts`, env.RCC_FACEBOOK_PAGE_TOKEN,
         { fields: 'id,message,created_time,permalink_url,full_picture', limit: '25', ...(after ? { after } : {}) }, fetcher);
       if (!Array.isArray(data.data)) throw new ImportError('meta_response');
+      stats.pages++;
+      stats.received += data.data.length;
       for (const post of data.data) posts.set(post.id, post);
       after = data.paging?.cursors?.after;
       more = Boolean(data.paging?.next && after);
@@ -103,6 +110,7 @@ export async function syncFacebook(env, fetcher = fetch) {
     const known = await db.prepare('SELECT facebook_id FROM facebook_posts ORDER BY checked_at ASC LIMIT 10').all();
     for (const row of known.results) {
       if (posts.has(row.facebook_id)) continue;
+      stats.rechecked++;
       try {
         const post = await graph(row.facebook_id, env.RCC_FACEBOOK_PAGE_TOKEN,
           { fields: 'id,message,created_time,permalink_url,full_picture' }, fetcher);
@@ -116,14 +124,27 @@ export async function syncFacebook(env, fetcher = fetch) {
       }
     }
     let imported = 0;
-    const candidates = [...posts.values()].map((source) => normalizePost(source)).filter(Boolean);
-    const ids = candidates.map((post) => post.id);
+    // Read identity/check order first, so irrelevant posts never parse dates, URLs or titles.
+    // Include known IDs without a marker: removing the marker must still deactivate them.
+    const ids = [...posts.keys()].filter((id) => pagePostId.test(id));
     const existing = ids.length ? await db.prepare(`SELECT facebook_id,checked_at FROM facebook_posts
       WHERE facebook_id IN (${ids.map(() => '?').join(',')})`).bind(...ids).all() : { results: [] };
     const previous = new Map(existing.results.map((row) => [row.facebook_id, row.checked_at]));
+    const candidates = [];
+    const now = Date.now();
+    for (const source of posts.values()) {
+      stats.examined++;
+      const active = eligible(source?.message);
+      if (active) stats.matching++;
+      if (!active && !previous.has(source?.id)) { stats.rejected++; continue; }
+      const post = normalizePost(source, now, active);
+      if (post) candidates.push(post);
+      else stats.rejected++;
+    }
     // Bound D1 queries/subrequests for Workers Free. New imports first, then oldest checks.
-    const pending = candidates.filter((post) => post.active || previous.has(post.id)).sort((a, b) =>
-      Number(previous.has(a.id)) - Number(previous.has(b.id)) || (previous.get(a.id) || '').localeCompare(previous.get(b.id) || ''));
+    const pending = candidates.sort((a, b) =>
+      Number(previous.has(a.id)) - Number(previous.has(b.id)) ||
+      ((previous.get(a.id) || '') < (previous.get(b.id) || '') ? -1 : (previous.get(a.id) || '') > (previous.get(b.id) || '') ? 1 : 0));
     if (pending.length > 15) more = true;
     for (const post of pending.slice(0, 15)) {
       if (Date.now() - started > 240000) { more = true; break; }
@@ -132,8 +153,14 @@ export async function syncFacebook(env, fetcher = fetch) {
       const write = await db.prepare(UPSERT).bind(post.id, PAGE_ID, post.title, post.body, post.date,
         post.permalink, imageUrl, post.active, new Date().toISOString(), owner, Date.now()).run();
       imported += write.meta.changes;
+      if (write.meta.changes) stats[previous.has(post.id) ? 'updated' : 'created']++;
     }
-    return { status: 'ok', processed: imported, truncated: more };
+    return { status: 'ok', processed: imported, truncated: more, ...stats, durationMs: Date.now() - started };
+  } catch (error) {
+    // Never attach an arbitrary storage/transport message to the public log record.
+    const safe = error instanceof ImportError ? error : new ImportError('storage_or_internal');
+    safe.stats = { ...stats, durationMs: Date.now() - started };
+    throw safe;
   } finally {
     await db.prepare('DELETE FROM facebook_sync_lock WHERE id=1 AND owner=?').bind(owner).run();
   }

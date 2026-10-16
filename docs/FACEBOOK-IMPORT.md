@@ -2,7 +2,10 @@
 
 ## État et périmètre
 
-Branche `codex/facebook-news-import`, PR nº 1 existante. Aucun déploiement effectué.
+Branche `codex/facebook-news-import`, PR nº 1 existante. Les optimisations décrites
+ci-dessous sont préparées sans nouveau déploiement. La version Preview antérieure
+a réellement importé la publication La Brède le 16 octobre 2026, aux Crons de
+14:30 et 14:40 UTC, avec un seul identifiant en D1 après les deux passages.
 Pas de R2, pas de bucket, pas de binding RCC_FACEBOOK_MEDIA, pas de souscription
 payante requise par cette intégration. Utiliser Workers Free et D1 Free, sans
 activer R2, Workers Paid ou un produit demandant une carte bancaire.
@@ -173,6 +176,107 @@ images absentes/expirées/renouvelées, URL malveillantes, absence de token dans
 images publiques, fallback des cartes et du lecteur, sécurité HTML et repli manuel.
 Le navigateur intégré n'avait pas accès à localhost lors de la phase précédente :
 la revue visuelle desktop/mobile reste à réaliser en Preview, sans la déclarer acquise.
+
+## Optimisation finale préparée — accord requis avant déploiement
+
+### CPU : constats et changements
+
+Les Crons de référence ont consommé 13 puis 12 ms de CPU ; ce ne sont pas leurs
+durées réseau (8 952 et 4 432 ms). Aucun profil CPU détaillé Cloudflare n'est
+disponible : l'attribution exacte de ces millisecondes n'est pas démontrée.
+Les opérations inutiles identifiées dans le code étaient la normalisation complète
+de toutes les publications (dates, URL, images, titre), une RegExp ID reconstruite
+par publication, deux tests du hashtag et un tri localeCompare inutile pour des
+horodatages ISO UTC.
+
+La nouvelle version réutilise les RegExp, écarte les publications sans marqueur
+et inconnues avant la normalisation, teste une seule fois leur marqueur et trie
+les dates ISO par comparaison simple. Les images absentes n'entraînent plus une
+exception URL utilisée comme contrôle de flux. Les ID connus sans hashtag restent
+normalisés pour désactivation ; une image renouvelée reste réécrite. L'UPSERT et
+le rafraîchissement checked_at sont volontairement conservés, ainsi que le verrou
+et son fencing : les retirer ferait perdre des garanties de concurrence/rotation.
+Les 3 pages de 25, 10 recontrôles et 15 écritures restent inchangés ; aucune réduction
+silencieuse de couverture ou d'actualisation. Aucun changement des tables/index.
+
+### Journaux sans secrets
+
+Chaque succès contient status, processed, truncated et les compteurs suivants :
+
+| Champ | Sens |
+| --- | --- |
+| received | Objets reçus dans les pages /posts (avant dédoublonnage) |
+| pages | Pages /posts reçues et décodées avec succès, maximum 3 |
+| rechecked | Appels directs tentés pour les anciens ID connus, maximum 10 |
+| examined | Publications uniques examinées, flux et recontrôles réunis |
+| matching | Publications uniques avec hashtag entier, avant validation des autres champs |
+| rejected | Publications uniques invalides ou sans hashtag et inconnues |
+| created | Nouvelles lignes effectivement écrites sous verrou |
+| updated | Lignes déjà connues effectivement écrites (rafraîchissement compris) |
+| durationMs | Durée totale du handler jusqu'à résolution de la synchronisation, libération du verrou comprise |
+
+processed = created + updated, pas le nombre de nouveaux articles. Un retrait de
+hashtag sur un article connu est une mise à jour, pas un rejet. Une publication
+éligible différée par la limite de 15 n'est pas un rejet ; truncated le signale.
+En erreur, les compteurs partiels disponibles sont conservés, ainsi que les
+codes/étapes HTTP déjà filtrés. Une erreur avant acquisition du verrou peut ne
+pas disposer de compteurs. Aucun corps Meta, URL, ID, texte, jeton ou en-tête n'est
+journalisé. durationMs ne mesure PAS le CPU. Utiliser cpuTime et wallTime du tail
+Cloudflare : aucune valeur CPU n'est inventée côté JavaScript.
+
+### Historique : limite assumée et rattrapage proposé
+
+La fenêtre automatique reste les 75 dernières publications, plus la rotation
+des 10 anciens ID déjà importés. Une publication jamais importée et plus ancienne
+ne sera pas découverte par cette version, même avec un hashtag ajouté après coup.
+Pour ces exceptions, stratégie recommandée : rattrapage administratif limité à
+1–5 ID explicites de cette Page, validation des ID, lecture officielle Graph et
+même normalisation/UPSERT/verrou. Ce mode n'est PAS implémenté ni exécuté ici :
+il nécessitera une validation distincte et des tests avant utilisation. Aucune
+route publique de déclenchement et aucun secret supplémentaire. Ne jamais écrire
+manuellement une ligne D1 pour contourner les protections. Au quotidien, ajouter
+le marqueur au moment de publier/programmer suffit ; pas d'intervention technique
+régulière. Pas d'exploration illimitée ni de nouvel état/cursor D1 dans cette PR.
+
+### Validation et déploiement Preview ultérieur
+
+1. Exécuter npm test, npm run validate, git diff --check, les builds dry-run Worker
+   et Functions. Les tests utilisent réseau simulé et SQLite mémoire ; ils ne
+   prouvent ni le CPU Cloudflare ni la disponibilité d'une image Meta réelle.
+2. Après accord explicite seulement, préparer une archive propre du commit de PR.
+   Aucun déploiement Pages n'est nécessaire pour cette optimisation backend.
+3. Vérifier le nom rccnew-facebook-sync-preview et D1 af28c81b-a6da-4390-aab3-bbaf95391420.
+   Le fichier versionné garde sync=false par sécurité. Pour conserver l'activation
+   Preview déjà autorisée lors du déploiement de test, utiliser explicitement :
+
+   ```text
+   npx wrangler deploy --config workers/facebook-sync.toml --var RCC_FACEBOOK_SYNC_ENABLED:true
+   npx wrangler tail --config workers/facebook-sync.toml --format json
+   ```
+
+   Ne pas réinstaller ni lire le secret existant. Ne pas toucher Pages, push,
+   Production ou à la PR. Aucun nouvel apply de migration : seules 0001 et 0002
+   déjà appliquées sont nécessaires. Vérifier après déploiement flag, version et Cron.
+4. Observer au moins 6 passages NATURELS (60 minutes), puis idéalement 24 heures,
+   incluant rafraîchissements et nouveau post réel. Relever cpuTime, wallTime,
+   compteurs, erreurs, D1 et API. Vérifier 1 ID unique pour chaque article et les
+   13 manuels inchangés ; push toujours false. Pas de notification ni test forcé.
+5. Critère CPU : passages habituels sous 10 ms, viser <= 8 ms pour une marge ;
+   ne pas conclure sur une moyenne cachant des dépassements. Sans mesure distante
+   la réduction CPU reste NON VALIDÉE. Les compteurs couvrent aussi les lots rejetés.
+6. Si les dépassements persistent : profiler en environnement isolé, puis envisager
+   une stratégie à coût borné par passage (fenêtre récente à chaque Cron, scan plus
+   profond réparti périodiquement avec curseur et tests de couverture). Diminuer la
+   fréquence seule ne réduit pas le CPU PAR invocation ; ne pas présenter un Cron
+   moins fréquent comme un correctif. Toute adaptation requiert un nouvel accord,
+   aucune souscription payante ni activation R2.
+
+Les seuils de référence officiels : [Workers Free CPU et sous-requêtes](https://developers.cloudflare.com/workers/platform/limits/)
+et [D1 Free requêtes](https://developers.cloudflare.com/d1/platform/limits/).
+Les erreurs de quota restent à surveiller ; aucun historique complet de consommation
+du compte n'est déduit des tests locaux. Retour arrière : redéployer la version
+Worker Preview précédente, ou désactiver son flag avec accord ; garder D1 et les
+articles. Aucun changement du schéma ni migration de retour nécessaire.
 
 Retour arrière : flag Worker false pour arrêter la synchronisation ; flag Pages
 read false pour revenir aux actualités manuelles. Ne supprimer ni D1 ni les JSON,
