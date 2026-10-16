@@ -131,6 +131,44 @@
     return data;
   };
 
+  // Facebook is a separate read-only source; notification polling still uses news.json only.
+  const facebookState = { news: [], next: 0, loaded: false, unavailable: false };
+  async function loadFacebookPage() {
+    try {
+      const response = await fetch(`/api/facebook-news?limit=20&offset=${facebookState.next || 0}`, {
+        cache: 'no-store', signal: AbortSignal.timeout(6000)
+      });
+      if (!response.ok) throw new Error('unavailable');
+      const data = await response.json();
+      if (!Array.isArray(data.news)) throw new Error('invalid');
+      const merged = new Map(facebookState.news.map((item) => [item.id, item]));
+      for (const item of data.news) merged.set(item.id, { ...item, notification: false });
+      facebookState.news = [...merged.values()];
+      facebookState.next = data.next;
+      facebookState.unavailable = false;
+    } catch { facebookState.unavailable = true; }
+    facebookState.loaded = true;
+  }
+  async function combinedNews(requestedId = '') {
+    const [manual] = await Promise.all([fetchData('news'), facebookState.loaded ? null : loadFacebookPage()]);
+    let imported = facebookState.news;
+    if (requestedId.startsWith('facebook-') && !imported.some((item) => item.id === requestedId)) {
+      try {
+        const response = await fetch(`/api/facebook-news?id=${encodeURIComponent(requestedId)}`, { cache: 'no-store', signal: AbortSignal.timeout(6000) });
+        if (response.ok) imported = [...imported, ...(await response.json()).news];
+      } catch { /* Manual articles remain available. */ }
+    }
+    return [...(Array.isArray(manual) ? manual : manual.news || []), ...imported];
+  }
+  function facebookLink(item) {
+    try {
+      const url = new URL(item.facebookUrl);
+      return item.source === 'facebook' && url.protocol === 'https:' &&
+        (url.hostname === 'facebook.com' || url.hostname.endsWith('.facebook.com'))
+        ? `<a class="button ghost" href="${escapeHtml(url.href)}" target="_blank" rel="noopener noreferrer">Voir sur Facebook</a>` : '';
+    } catch { return ''; }
+  }
+
   const PAGE_BANNER_POSITIONS = {
     center: 'center center',
     top: 'center top',
@@ -284,7 +322,7 @@
     const grid = document.querySelector('.news-grid');
     if (!grid) return;
 
-    const data = await fetchData('news');
+    const data = await combinedNews();
     const newsletterData = await fetchData('newsletters');
     const news = (Array.isArray(data) ? data : (data.news || []))
       .map((item, index) => ({ ...item, _index: index }))
@@ -353,7 +391,7 @@
       return tags;
     };
 
-    const featured = news.find((item) => item.featured) || news.find((item) => item.important) || news[0];
+    const featured = news[0]; // Preserve the editorial layout, but always show the newest article first.
     const secondary = news.filter((item) => item !== featured).slice(0, 3);
     const articleMeta = (item) => `
       <div class="journal-meta">
@@ -452,6 +490,24 @@
       button.classList.add('is-active');
       applyFilter(button.dataset.newsFilter);
     });
+    if (facebookState.unavailable) {
+      const notice = document.createElement('p');
+      notice.setAttribute('role', 'status');
+      notice.textContent = 'Les publications Facebook sont temporairement indisponibles. Les actualités du club restent accessibles.';
+      grid.appendChild(notice);
+    }
+    if (facebookState.next !== null || facebookState.unavailable) {
+      const more = document.createElement('button');
+      more.type = 'button';
+      more.className = 'button ghost';
+      more.textContent = facebookState.unavailable ? 'Réessayer Facebook' : 'Charger les actualités précédentes';
+      more.addEventListener('click', async () => {
+        more.disabled = true;
+        await loadFacebookPage();
+        await renderNews();
+      });
+      grid.appendChild(more);
+    }
   }
 
   async function renderArticlePage() {
@@ -460,7 +516,7 @@
     const reader = shell.querySelector('.article-reader') || shell;
     const params = new URLSearchParams(window.location.search);
     const requestedId = params.get('id') || '';
-    const data = await fetchData('news');
+    const data = await combinedNews(requestedId);
     const news = (Array.isArray(data) ? data : (data.news || [])).map((item, index) => ({ ...item, _index: index }));
     const item = news.find((entry) =>
       newsId(entry, entry._index) === requestedId
@@ -508,6 +564,7 @@
       </header>
       <a class="article-back" href="./actualites.html">Retour aux actualites</a>
       <div class="article-actions">
+        ${facebookLink(item)}
         <button class="button ghost" type="button" data-copy-article-link>Copier le lien</button>
         <a class="button ghost" href="${escapeHtml(permanent)}">Lien permanent</a>
       </div>

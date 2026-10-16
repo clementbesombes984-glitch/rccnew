@@ -7,6 +7,6 @@
   "scripts": {
     "build": "node scripts/validate-project.js",
     "validate": "node scripts/validate-project.js",
-    "test": "node scripts/test-priority-fixes.js && node scripts/test-migration.js && node scripts/test-standings.js"
+    "test": "node scripts/test-priority-fixes.js && node scripts/test-migration.js && node scripts/test-standings.js && node scripts/test-facebook.js"
   }
 }

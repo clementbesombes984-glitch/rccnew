@@ -1,0 +1,20 @@
+name = "rccnew-facebook-sync"
+main = "facebook-sync.js"
+compatibility_date = "2026-10-16"
+
+[triggers]
+crons = ["*/10 * * * *"]
+
+[vars]
+RCC_FACEBOOK_SYNC_ENABLED = "false"
+
+# Replace this non-deployable placeholder with the NEW dedicated D1 database ID.
+[[d1_databases]]
+binding = "RCC_FACEBOOK_DB"
+database_name = "rccnew-facebook"
+database_id = "REPLACE_WITH_NEW_D1_ID"
+migrations_dir = "../migrations/facebook"
+
+[[r2_buckets]]
+binding = "RCC_FACEBOOK_MEDIA"
+bucket_name = "rccnew-facebook-media"
