@@ -20,3 +20,10 @@ RCC_GITHUB_BRANCH = "main"
 RCC_SITE_ORIGIN = "https://rccubzaguais.fr"
 RCC_PUSH_ENABLED = "false"
 RCC_PUSH_DELIVERY_MODE = "workflow"
+RCC_FACEBOOK_READ_ENABLED = "true"
+
+[[env.production.d1_databases]]
+binding = "RCC_FACEBOOK_DB"
+database_name = "rccnew-facebook-production"
+database_id = "d9488355-321c-4298-aba4-f256de6e4b73"
+migrations_dir = "migrations/facebook"

@@ -1,4 +1,6 @@
-name = "rccnew-facebook-sync-preview"
+# Sandbox only. The historically named preview Worker is now production;
+# deploy production with facebook-sync.production.toml instead.
+name = "rccnew-facebook-sync-sandbox"
 main = "facebook-sync.js"
 compatibility_date = "2026-10-16"
 

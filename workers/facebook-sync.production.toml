@@ -1,0 +1,16 @@
+# Promoted existing Worker: historical name retained to preserve its encrypted secret.
+name = "rccnew-facebook-sync-preview"
+main = "facebook-sync.js"
+compatibility_date = "2026-10-16"
+
+[triggers]
+crons = ["*/10 * * * *"]
+
+[vars]
+RCC_FACEBOOK_SYNC_ENABLED = "true"
+
+[[d1_databases]]
+binding = "RCC_FACEBOOK_DB"
+database_name = "rccnew-facebook-production"
+database_id = "d9488355-321c-4298-aba4-f256de6e4b73"
+migrations_dir = "../migrations/facebook"
