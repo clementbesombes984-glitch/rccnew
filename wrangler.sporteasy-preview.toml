@@ -1,0 +1,19 @@
+# Dedicated branch Preview only; never main or the official domain.
+name = "rccnew"
+pages_build_output_dir = "."
+compatibility_date = "2026-10-16"
+
+[vars]
+RCC_FACEBOOK_READ_ENABLED = "true"
+RCC_SPORTEASY_READ_ENABLED = "true"
+RCC_PUSH_ENABLED = "false"
+
+[[d1_databases]]
+binding = "RCC_FACEBOOK_DB"
+database_name = "rccnew-facebook-preview"
+database_id = "af28c81b-a6da-4390-aab3-bbaf95391420"
+migrations_dir = "migrations/facebook"
+
+[[kv_namespaces]]
+binding = "RCC_SPORTEASY_KV"
+id = "d7df448506d7441a9d22dc4be96a291c"
