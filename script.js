@@ -37,11 +37,13 @@ const mobileNavLabels = [
 ];
 
 if (nav) {
-  const calendarLink = nav.querySelector('[data-nav-submenu] a[href="./calendrier.html"]');
-  if (calendarLink && !nav.querySelector('a[href="./classements.html"]')) {
-    const standingsLink = document.createElement('a');
+  const homeSubmenu = nav.querySelector('[data-nav-dropdown-main][href="./index.html#accueil"]')
+    ?.closest('[data-nav-dropdown]')?.querySelector('[data-nav-submenu]');
+  const calendarLink = homeSubmenu?.querySelector('a[href="./calendrier.html"]');
+  if (calendarLink) {
+    const standingsLink = homeSubmenu.querySelector('a[href="./classements.html"]') || document.createElement('a');
     standingsLink.href = './classements.html';
-    standingsLink.textContent = 'Classement';
+    standingsLink.textContent = 'Classements';
     calendarLink.after(standingsLink);
   }
   const clubLink = nav.querySelector('a.nav-text-link[href="./club.html"]:not([data-nav-dropdown-main])');
