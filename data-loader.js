@@ -168,6 +168,48 @@
         ? `<a class="button ghost" href="${escapeHtml(url.href)}" target="_blank" rel="noopener noreferrer">Voir sur Facebook</a>` : '';
     } catch { return ''; }
   }
+  function safeFacebookImage(value) {
+    try {
+      const url = new URL(value);
+      return String(value).length <= 4096 && url.protocol === 'https:' && !url.username && !url.password && !url.port && !url.hash &&
+        ![...url.searchParams.keys()].some((key) => /token|appsecret|authorization/i.test(key)) &&
+        ['fbcdn.net', 'fbsbx.com'].some((host) => url.hostname === host || url.hostname.endsWith(`.${host}`)) ? url.href : '';
+    } catch { return ''; }
+  }
+  function facebookCardImage(item, className) {
+    const url = safeFacebookImage(item.image);
+    return `<div class="${className} journal-image-fallback"${url ? ` data-facebook-background="${escapeHtml(url)}"` : ''}><strong>RCC</strong></div>`;
+  }
+  function activateFacebookImages(root) {
+    // Cards keep their RCC fallback until the external image has actually loaded.
+    root.querySelectorAll('[data-facebook-background]').forEach((node) => {
+      const url = safeFacebookImage(node.getAttribute('data-facebook-background'));
+      if (!url) return;
+      const image = new Image();
+      image.referrerPolicy = 'no-referrer';
+      image.onload = () => {
+        node.style.backgroundImage = `url(${JSON.stringify(url)})`;
+        node.classList.remove('journal-image-fallback');
+        node.querySelector('strong')?.remove();
+      };
+      image.onerror = () => { node.removeAttribute('data-facebook-background'); };
+      image.src = url;
+    });
+    root.querySelectorAll('img[data-facebook-direct-image]').forEach((image) => {
+      const fail = () => {
+        const figure = image.parentElement;
+        if (!figure) return;
+        image.remove();
+        figure.classList.add('article-image-fallback');
+        const mark = document.createElement('strong');
+        mark.textContent = 'RCC';
+        figure.appendChild(mark);
+      };
+      image.addEventListener('error', fail, { once: true });
+      // Also cover failures that occurred before handlers were attached.
+      if (image.complete && !image.naturalWidth) fail();
+    });
+  }
 
   const PAGE_BANNER_POSITIONS = {
     center: 'center center',
@@ -334,7 +376,7 @@
 
     const renderSimpleCard = (item) => `
       <article data-news-url="${escapeHtml(newsUrl(item, item._index))}">
-        ${item.image ? `<div class="news-image"${imageStyle(item.image)}></div>` : ''}
+        ${item.source === 'facebook' ? facebookCardImage(item, 'news-image') : item.image ? `<div class="news-image"${imageStyle(item.image)}></div>` : ''}
         <span>${escapeHtml(item.category || 'Club')}${item.important ? ' · Important' : ''}</span>
         <h3>${escapeHtml(item.title || 'Actualite RCC')}</h3>
         <p>${escapeHtml(item.summary || item.body || '')}</p>
@@ -343,6 +385,7 @@
 
     if (!grid.classList.contains('news-list')) {
       grid.innerHTML = news.slice(0, 3).map(renderSimpleCard).join('');
+      activateFacebookImages(grid);
       return;
     }
 
@@ -399,7 +442,7 @@
         <time>${escapeHtml(item.date ? formatDate(item.date) : 'Publie recemment')}</time>
       </div>
     `;
-    const imageBlock = (item, className = 'journal-image') => item.image
+    const imageBlock = (item, className = 'journal-image') => item.source === 'facebook' ? facebookCardImage(item, className) : item.image
       ? `<div class="${className}"${imageStyle(item.image)}></div>`
       : `<div class="${className} journal-image-fallback"><strong>RCC</strong></div>`;
     const renderJournalCard = (item, className = '') => `
@@ -466,6 +509,7 @@
       </section>
     `;
 
+    activateFacebookImages(grid);
     const applyFilter = (filter) => {
       let visibleCount = 0;
       const newsletterArchive = grid.querySelector('[data-newsletter-archive]');
@@ -554,7 +598,7 @@
     if (item.image) document.querySelector('meta[property="og:image"]')?.setAttribute('content', new URL(item.image, SITE_ORIGIN).href);
 
     reader.innerHTML = `
-      <header class="page-title-banner article-header"${item.image ? ` style="--page-title-banner-image:url('${escapeHtml(item.image)}')"` : ''}>
+      <header class="page-title-banner article-header"${item.image && item.source !== 'facebook' ? ` style="--page-title-banner-image:url('${escapeHtml(item.image)}')"` : ''}>
         <div class="journal-meta">
           <span>${escapeHtml(item.category || 'Club')}</span>
           <time>${escapeHtml(item.date ? formatDate(item.date) : 'Publie recemment')}</time>
@@ -568,7 +612,7 @@
         <button class="button ghost" type="button" data-copy-article-link>Copier le lien</button>
         <a class="button ghost" href="${escapeHtml(permanent)}">Lien permanent</a>
       </div>
-      ${item.image ? `<figure class="article-main-image"><img src="${escapeHtml(item.image)}" alt="${escapeHtml(item.title || 'Actualite RCC')}" loading="eager" /></figure>` : '<div class="article-main-image article-image-fallback"><strong>RCC</strong></div>'}
+      ${item.source === 'facebook' ? (safeFacebookImage(item.image) ? `<figure class="article-main-image"><img data-facebook-direct-image referrerpolicy="no-referrer" src="${escapeHtml(safeFacebookImage(item.image))}" alt="${escapeHtml(item.title || 'Actualite RCC')}" loading="eager" /></figure>` : '<div class="article-main-image article-image-fallback"><strong>RCC</strong></div>') : item.image ? `<figure class="article-main-image"><img src="${escapeHtml(item.image)}" alt="${escapeHtml(item.title || 'Actualite RCC')}" loading="eager" /></figure>` : '<div class="article-main-image article-image-fallback"><strong>RCC</strong></div>'}
       <div class="article-body">
         ${body.length ? body.map((paragraph) => `<p>${escapeHtml(paragraph)}</p>`).join('') : '<p>Le contenu complet sera prochainement disponible.</p>'}
       </div>
@@ -579,6 +623,7 @@
       }).join('')}</div></section>` : ''}
     `;
 
+    activateFacebookImages(reader);
     reader.querySelector('[data-copy-article-link]')?.addEventListener('click', async () => {
       try {
         await navigator.clipboard.writeText(permanent);

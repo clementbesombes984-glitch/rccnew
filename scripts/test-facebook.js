@@ -2,25 +2,28 @@ import assert from 'node:assert/strict';
 import { DatabaseSync } from 'node:sqlite';
 import { readFile } from 'node:fs/promises';
 import vm from 'node:vm';
-import { PAGE_ID, UPSERT, eligible, normalizePost, syncFacebook, persistImage, mediaUrl } from '../integrations/meta/facebook-import.js';
+import { PAGE_ID, UPSERT, eligible, normalizePost, syncFacebook, mediaUrl } from '../integrations/meta/facebook-import.js';
 import { onRequestGet as feed } from '../functions/api/facebook-news.js';
-import { onRequestGet as image } from '../functions/api/facebook-media/[id].js';
 
 const sql = new DatabaseSync(':memory:');
 sql.exec(await readFile(new URL('../migrations/facebook/0001_posts.sql', import.meta.url), 'utf8'));
+sql.exec("INSERT INTO facebook_posts VALUES ('legacy','page','Title','Body','2026-10-15','https://facebook.com/test','',1,'2026-10-15')");
+sql.exec(await readFile(new URL('../migrations/facebook/0002_direct_image_url.sql', import.meta.url), 'utf8'));
+assert.equal(sql.prepare("SELECT body,image_url FROM facebook_posts WHERE facebook_id='legacy'").get().body, 'Body');
+assert.equal(sql.prepare("SELECT image_url FROM facebook_posts WHERE facebook_id='legacy'").get().image_url, '');
+sql.exec("DELETE FROM facebook_posts WHERE facebook_id='legacy'");
+let queryCount = 0;
 function d1() {
   return { prepare(query) {
     let args = [];
     const statement = { bind(...values) { args = values; return statement; },
-      async run() { const result = sql.prepare(query).run(...args); return { meta: { changes: Number(result.changes) } }; },
-      async all() { return { results: sql.prepare(query).all(...args) }; },
-      async first() { return sql.prepare(query).get(...args) || null; } };
+      async run() { queryCount++; const result = sql.prepare(query).run(...args); return { meta: { changes: Number(result.changes) } }; },
+      async all() { queryCount++; return { results: sql.prepare(query).all(...args) }; },
+      async first() { queryCount++; return sql.prepare(query).get(...args) || null; } };
     return statement;
   } };
 }
-const objects = new Map();
-const bucket = { async put(key, bytes, metadata) { objects.set(key, { body: bytes, ...metadata }); }, async get(key) { return objects.get(key); } };
-const env = { RCC_FACEBOOK_DB: d1(), RCC_FACEBOOK_MEDIA: bucket, RCC_FACEBOOK_SYNC_ENABLED: 'true',
+const env = { RCC_FACEBOOK_DB: d1(), RCC_FACEBOOK_SYNC_ENABLED: 'true',
   RCC_FACEBOOK_READ_ENABLED: 'true', RCC_FACEBOOK_PAGE_TOKEN: 'fixture-not-a-real-token' };
 const post = { id: `${PAGE_ID}_123`, message: 'Victoire RCC !\nTexte complet #ActuRCC', created_time: '2026-10-15T10:00:00+0000', permalink_url: 'https://www.facebook.com/example/posts/123' };
 for (const text of ['#ActuRCC', '#acturcc', '#ACTURCC', 'Bonjour (#ActuRCC)']) assert(eligible(text));
@@ -45,7 +48,7 @@ assert.equal(sql.prepare('SELECT count(*) n FROM facebook_posts').get().n, 1);
 const fenced = await env.RCC_FACEBOOK_DB.prepare(UPSERT).bind(post.id, PAGE_ID, 'stale', 'stale',
   new Date().toISOString(), post.permalink_url, '', 1, new Date().toISOString(), 'expired-owner', Date.now()).run();
 assert.equal(fenced.meta.changes, 0, 'A stale process cannot modify an existing article');
-assert.equal(sql.prepare('SELECT image_key FROM facebook_posts').get().image_key, '');
+assert.equal(sql.prepare('SELECT image_url FROM facebook_posts').get().image_url, '');
 const overlapping = await Promise.all([syncFacebook(env, fetcher), syncFacebook(env, fetcher)]);
 assert(overlapping.some((result) => result.status === 'busy'));
 assert.equal(sql.prepare('SELECT count(*) n FROM facebook_posts').get().n, 1);
@@ -68,11 +71,22 @@ assert.equal(sql.prepare('SELECT active FROM facebook_posts').get().active, 1);
 assert.equal(mediaUrl('https://fbcdn.net.evil.test/a'), null);
 assert.equal(mediaUrl('http://scontent.fbcdn.net/a'), null);
 assert.equal(mediaUrl('https://localhost/a'), null);
-const png = new Uint8Array([137,80,78,71,13,10,26,10]);
-const key = await persistImage('https://scontent.fbcdn.net/test', bucket, async () => new Response(png, { headers: { 'content-type': 'image/png' } }));
-assert(objects.has(key));
-await assert.rejects(() => persistImage('https://scontent.fbcdn.net/test', bucket, async () => new Response('<script>', { headers: { 'content-type': 'image/png' } })));
-await assert.rejects(() => persistImage('https://scontent.fbcdn.net/test', bucket, async () => new Response('x', { headers: { 'content-type': 'image/png', 'content-length': '999999999' } })));
+assert.equal(mediaUrl('https://scontent.fbcdn.net/test?access_token=secret'), null);
+assert.equal(mediaUrl('https://scontent.fbcdn.net/test#secret'), null);
+const firstImage = 'https://scontent.fbcdn.net/photo.jpg?oe=expired';
+current = [{ ...post, full_picture: firstImage }];
+await syncFacebook(env, fetcher);
+assert.equal(sql.prepare('SELECT image_url FROM facebook_posts').get().image_url, firstImage);
+current = [{ ...post, full_picture: 'https://scontent.fbcdn.net/photo.jpg?oe=renewed' }];
+await syncFacebook(env, fetcher);
+assert.equal(sql.prepare('SELECT image_url FROM facebook_posts').get().image_url, current[0].full_picture);
+current = [{ ...post, full_picture: `https://scontent.fbcdn.net/${env.RCC_FACEBOOK_PAGE_TOKEN}` }];
+await syncFacebook(env, fetcher);
+assert.equal(sql.prepare('SELECT image_url FROM facebook_posts').get().image_url, '');
+current = [{ ...post, full_picture: 'javascript:alert(1)' }];
+await syncFacebook(env, fetcher);
+assert.equal(sql.prepare('SELECT count(*) n FROM facebook_posts').get().n, 1);
+assert.equal(sql.prepare('SELECT image_url FROM facebook_posts').get().image_url, '');
 const request = (query = '') => new Request(`https://preview.example/api/facebook-news${query}`);
 let response = await feed({ request: request(), env });
 let data = await response.json();
@@ -85,21 +99,23 @@ assert.equal((await (await feed({ request: request('?id=facebook-' + post.id), e
 assert.equal((await feed({ request: request('?offset=-1'), env })).status, 400);
 assert.equal((await (await feed({ request: request(), env: {} })).json()).news.length, 0);
 assert.equal((await feed({ request: request(), env: { ...env, RCC_FACEBOOK_DB: { prepare() { throw new Error('private detail'); } } } })).status, 503);
-assert.equal((await image({ params: { id: post.id }, env })).status, 404);
-sql.prepare('UPDATE facebook_posts SET image_key=?').run(key);
-assert.equal((await image({ params: { id: post.id }, env })).status, 200);
-sql.prepare('UPDATE facebook_posts SET active=0').run();
-assert.equal((await image({ params: { id: post.id }, env })).status, 404);
+current = [{ ...post, full_picture: firstImage }];
+await syncFacebook(env, fetcher);
+data = await (await feed({ request: request(), env })).json();
+assert.equal(data.news[0].image, firstImage);
+assert(!JSON.stringify(data).includes(env.RCC_FACEBOOK_PAGE_TOKEN));
+sql.prepare('UPDATE facebook_posts SET image_url=?').run('https://evil.example/image');
+assert.equal((await (await feed({ request: request(), env })).json()).news[0].image, '');
 // The frontend is executed, not just searched: manual content survives an API outage.
 const loader = await readFile(new URL('../data-loader.js', import.meta.url), 'utf8');
-const testable = loader.replace("  document.addEventListener('DOMContentLoaded', () => {", "  window.testFacebook = { combinedNews, escapeHtml, facebookLink, renderArticlePage };\n  document.addEventListener('DOMContentLoaded', () => {");
+const testable = loader.replace("  document.addEventListener('DOMContentLoaded', () => {", "  window.testFacebook = { combinedNews, escapeHtml, facebookLink, renderArticlePage, activateFacebookImages, facebookCardImage };\n  document.addEventListener('DOMContentLoaded', () => {");
 const sandbox = { window: { location: { origin: 'https://preview.example' } }, document: { addEventListener() {} }, URL, AbortSignal, console,
   fetch: async (url) => url.startsWith('/data/news.json') ? Response.json({ news: [{ id: 'manual', title: 'Article conservé' }] }) : new Response('', { status: 503 }) };
 vm.runInNewContext(testable, sandbox);
 assert.equal((await sandbox.window.testFacebook.combinedNews())[0].id, 'manual');
 assert.equal(sandbox.window.testFacebook.escapeHtml('<script>alert("x")</script>'), '&lt;script&gt;alert(&quot;x&quot;)&lt;/script&gt;');
 assert.equal(sandbox.window.testFacebook.facebookLink({ source: 'facebook', facebookUrl: 'javascript:alert(1)' }), '');
-const reader = { innerHTML: '', querySelector() { return null; } };
+const reader = { innerHTML: '', querySelector() { return null; }, querySelectorAll() { return []; } };
 const articleSandbox = { ...sandbox, URLSearchParams,
   window: { location: { origin: 'https://preview.example', search: `?id=facebook-${post.id}` } },
   document: { addEventListener() {}, querySelector(selector) { return selector === '[data-article-page]' ? { querySelector() { return reader; } } : null; } },
@@ -111,6 +127,49 @@ await articleSandbox.window.testFacebook.renderArticlePage();
 assert(reader.innerHTML.includes('&lt;script&gt;alert(1)&lt;/script&gt;'));
 assert(!reader.innerHTML.includes('<script>'));
 assert(reader.innerHTML.includes('Voir sur Facebook'));
+// Expired images keep a readable card and article fallback; no retries or token use.
+let probe;
+let removedMark = false;
+let removedAttribute = false;
+const card = { style: {}, getAttribute: () => firstImage, classList: { remove() {} },
+  querySelector: () => ({ remove() { removedMark = true; } }), removeAttribute() { removedAttribute = true; } };
+sandbox.Image = class { constructor() { probe = this; } };
+sandbox.window.testFacebook.activateFacebookImages({ querySelectorAll: (selector) => selector === '[data-facebook-background]' ? [card] : [] });
+assert.equal(probe.referrerPolicy, 'no-referrer');
+probe.onerror();
+assert(removedAttribute);
+assert(!removedMark);
+assert.equal(card.style.backgroundImage, undefined);
+sandbox.window.testFacebook.activateFacebookImages({ querySelectorAll: (selector) => selector === '[data-facebook-background]' ? [card] : [] });
+probe.onload();
+assert(removedMark);
+assert(card.style.backgroundImage.includes('scontent.fbcdn.net'));
+let articleFallback = false;
+let imageRemoved = false;
+let fallbackMark = '';
+sandbox.document.createElement = () => ({ textContent: '' });
+const brokenImage = { complete: true, naturalWidth: 0, addEventListener() {}, remove() { imageRemoved = true; },
+  parentElement: { classList: { add(name) { articleFallback = name === 'article-image-fallback'; } }, appendChild(mark) { fallbackMark = mark.textContent; } } };
+sandbox.window.testFacebook.activateFacebookImages({ querySelectorAll: (selector) => selector === 'img[data-facebook-direct-image]' ? [brokenImage] : [] });
+assert(articleFallback && imageRemoved);
+assert.equal(fallbackMark, 'RCC');
+assert(sandbox.window.testFacebook.facebookCardImage({ image: '' }, 'journal-image').includes('<strong>RCC</strong>'));
 assert(!calls.some((url) => /push|github|notifications/.test(url)));
+// Bounded Free-plan batches must eventually drain, not forever reimport the first 15.
+sql.exec('DELETE FROM facebook_posts');
+const backlog = Array.from({ length: 75 }, (_, i) => ({ ...post, id: `${PAGE_ID}_${1000 + i}` }));
+for (let pass = 0; pass < 5; pass++) {
+  queryCount = 0;
+  let externalCount = 0;
+  const result = await syncFacebook(env, async (url) => {
+    externalCount++;
+    const page = Number(new URL(url).searchParams.get('after') || 0);
+    return Response.json({ data: backlog.slice(page * 25, (page + 1) * 25),
+      ...(page < 2 ? { paging: { next: 'ignored-not-followed', cursors: { after: String(page + 1) } } } : {}) });
+  });
+  assert.equal(result.processed, 15);
+  assert(queryCount + externalCount < 50, 'Bound D1 and network subrequests for Workers Free');
+  assert.equal(sql.prepare('SELECT count(*) n FROM facebook_posts').get().n, (pass + 1) * 15);
+}
 sql.close();
-console.log('Facebook : hashtag, programmation simulée, SQLite idempotence/concurrence, modifications, retraits, pannes/token, R2, API et repli manuel/XSS : OK. Aucun appel distant ni push.');
+console.log('Facebook sans R2 : migration additive, hashtag, SQLite idempotence/concurrence, images absentes/expirées/renouvelées, token, API, repli manuel et XSS : OK. Aucun appel distant ni push.');

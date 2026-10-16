@@ -1,149 +1,175 @@
-# Facebook → RCC : installation et validation avant activation
+# Facebook → RCC — Preview gratuite, D1 uniquement
 
-## État livré
+## État et périmètre
 
-Branche `codex/facebook-news-import`. Aucun déploiement, aucune ressource distante
-créée, aucun token demandé dans le chat. `wrangler.toml` Production reste inchangé.
-Les identifiants fictifs des configurations doivent être remplacés avant déploiement.
-Le commit de la branche porte le préfixe `[CF-Pages-Skip]` afin d'éviter un
-déploiement Preview automatique lors du push et de la création de la PR.
+Branche `codex/facebook-news-import`, PR nº 1 existante. Aucun déploiement effectué.
+Pas de R2, pas de bucket, pas de binding RCC_FACEBOOK_MEDIA, pas de souscription
+payante requise par cette intégration. Utiliser Workers Free et D1 Free, sans
+activer R2, Workers Paid ou un produit demandant une carte bancaire.
+Ne pas accepter d'upgrade si le tableau de bord le propose : examiner les quotas.
+
+Base Preview existante vérifiée en lecture seule :
+
+- Nom : `rccnew-facebook-preview`.
+- ID : `af28c81b-a6da-4390-aab3-bbaf95391420`.
+- Binding des deux services : `RCC_FACEBOOK_DB`.
+- Worker isolé prévu : `rccnew-facebook-sync-preview`.
+- Pages : projet `rccnew`, branche Preview `codex/facebook-news-import` seulement.
+
 App Meta Studio Rugby : 1622656996088692 ; Page : 1131153776758221 ; Graph v25.0.
-Ces identifiants sont publics, contrairement au Page Access Token.
+Le secret `RCC_FACEBOOK_PAGE_TOKEN` reste **exclusivement sur le Worker**. Aucun
+token Meta dans Pages, GitHub, le navigateur ou le fichier de configuration.
+Le fichier `wrangler.toml` Production, le domaine officiel et l'ancien projet
+ne sont pas modifiés. Les commits portent `[CF-Pages-Skip]` pour empêcher le
+déploiement automatique lors des mises à jour de la PR ; ne pas fusionner maintenant.
 
-Le Worker lit uniquement `/1131153776758221/posts` et les anciens ID importés.
-Champs conformes au test communiqué : id,message,created_time,permalink_url,full_picture.
-Il n'appelle jamais de publication Facebook, GitHub ou push. Un hashtag entier
-insensible à la casse sélectionne le post. Le hashtag est retiré du texte, le
-titre est extrait de la première ligne (110 caractères maximum), sans IA.
-Les posts sans texte restant ont un libellé neutre « Publication Facebook ».
-Les dates futures et les objets explicitement non publiés sont refusés.
+## Fonctionnement
 
-D1 utilise un ID Facebook unique et un UPSERT. Un bail SQL sérialise les passages,
-et chaque écriture vérifie son propriétaire et son échéance (fencing).
-Les répétitions/reprises n'ajoutent pas de doublon. Un retrait confirmé du hashtag
-masque l'article ; une absence ou une erreur de lecture ne le supprime pas.
-10 anciens ID sont recontrôlés à chaque passage, dans l'ordre du dernier contrôle.
-Une suppression Facebook reste ambiguë avec une restriction d'accès : pas de
-suppression automatique sur simple erreur API ; une revue administrative est requise.
+Cron toutes les 10 minutes : `*/10 * * * *`, avec flag désactivé par défaut.
+Lecture seule de `/1131153776758221/posts` et d'anciens ID importés. Champs :
+id,message,created_time,permalink_url,full_picture. Aucun envoi vers Facebook.
+Le hashtag entier #ActuRCC est reconnu sans distinction de casse, puis retiré
+de l'affichage. Le titre vient de la première ligne, limité à 110 caractères.
+Aucun contenu inventé. Les dates futures/non publiées sont refusées.
 
-L'API `/api/facebook-news` est en lecture seule : 20 éléments par défaut, 50 maximum,
-`offset` borné à 10000, `next` pour charger la suite. Accès direct par `?id=facebook-ID`.
-La liste, l'accueil et le lecteur utilisent une source fusionnée ; JSON manuels et
-newsletters ne sont pas modifiés. Dates décroissantes, chargement de 20 imports
-puis bouton pour les précédents. Le lecteur comporte « Voir sur Facebook ».
-Les chaînes restent échappées, et les liens sont limités aux origines Facebook HTTPS.
-Une panne D1/Meta n'efface pas les articles manuels. Le bouton Réessayer gère les pannes.
+D1 conserve ID unique, texte, titre, date, lien Facebook et `image_url` éventuelle.
+UPSERT idempotent et verrou avec vérification du propriétaire/échéance à l'écriture.
+Le retrait confirmé du hashtag masque l'import ; une erreur ou une absence du
+flux ne prouve pas une suppression. Les articles manuels ne sont jamais écrits.
 
-## Médias
+La liste, l'accueil et le lecteur fusionnent imports et JSON manuels. Présentation
+existante, dates décroissantes, API paginée (20 éléments, maximum 50 par requête),
+bouton de chargement de la suite et lien « Voir sur Facebook ». Panne D1/Meta :
+les actualités manuelles restent accessibles. Aucun import n'entre dans le polling
+push ou la file GitHub. Les mécanismes de notifications manuelles sont inchangés.
 
-R2 est obligatoire pour activer la synchronisation : aucune URL temporaire Facebook
-ne devient une image permanente du site. Image principale uniquement pour cette V1.
-Téléchargements HTTPS limités à fbcdn.net/fbsbx.com et leurs sous-domaines,
-sans redirection, 5 Mio maximum, timeout, MIME et signatures binaires vérifiés.
-JPEG/PNG/WebP/AVIF seulement. Les objets sont adressés par hash du contenu,
-servis par `/api/facebook-media/ID` seulement si l'article est actif, en no-store.
-Une erreur image conserve l'ancienne image ou affiche le fallback RCC ; elle est
-comptée dans les logs et sera retentée au prochain passage. Pas de resizing dans
-cette V1 : une compression/variante mobile pourra être ajoutée après mesure.
-Les anciens objets R2 non référencés ne sont pas automatiquement purgés, pour ne
-pas supprimer un objet partagé. Prévoir une maintenance avec inventaire des
-références et purge contrôlée, notamment sur demande de suppression Meta/RCC.
-Ne pas considérer R2 comme une archive permanente autorisée de tout contenu Meta.
+### Images directes et expiration
 
-## Cloudflare : d'abord un environnement isolé
+Les URL HTTPS de fbcdn.net/fbsbx.com et de leurs sous-domaines sont validées à
+l'import, à la sortie de l'API et côté affichage. Refus d'autres origines, ports,
+identifiants URL, fragments et paramètres token/authorization/appsecret.
+Le Worker ne télécharge aucun média. Le navigateur charge directement l'image,
+sans envoyer le jeton Page, avec referrerPolicy=no-referrer.
 
-Commandes à exécuter seulement après validation et activation R2 par le propriétaire :
+Les cartes affichent d'abord le fallback RCC, puis ne remplacent ce fallback
+qu'après chargement réussi. Une URL expirée, bloquée ou hors ligne garde le
+fallback. Dans le lecteur, une image cassée est remplacée par le bloc RCC. Aucun
+onerror HTML inline, aucune boucle de rechargement. Le texte et le lien restent
+consultables ; une image absente/invalide ne bloque jamais la publication.
+L'en-tête photo des articles Facebook ne dépend pas de leur URL distante.
 
-1. Créer la base : `npx wrangler d1 create rccnew-facebook-preview`.
-2. Créer le bucket privé : `npx wrangler r2 bucket create rccnew-facebook-media-preview`.
-   Ne pas activer son accès public ; conserver le service via l'API Pages.
-3. Reporter l'ID D1 dans `wrangler.facebook-preview.toml`. Remplacer aussi les
-   valeurs du Worker pour pointer vers la même base/bucket de préproduction.
-   Utiliser le nom Worker `rccnew-facebook-sync-preview` pendant ces tests.
-4. Appliquer la migration **sur cette base isolée** :
-   `npx wrangler d1 migrations apply rccnew-facebook-preview --remote --config wrangler.facebook-preview.toml`.
-5. Les deux services partagent les bindings `RCC_FACEBOOK_DB` (D1) et
-   `RCC_FACEBOOK_MEDIA` (R2). Aucun binding KV push ni standings dans le nouveau Worker.
-6. Installer **sur le Worker uniquement**, via saisie masquée/interactive :
-   `npx wrangler secret put RCC_FACEBOOK_PAGE_TOKEN --config workers/facebook-sync.toml`.
-   Vérifier auparavant que ce fichier cible bien le Worker preview, pas Production.
-   Jamais de token dans le fichier TOML, les arguments, GitHub, ou le JavaScript public.
-7. Flags : Worker `RCC_FACEBOOK_SYNC_ENABLED=false` ; Pages
-   `RCC_FACEBOOK_READ_ENABLED=false` ; conserver `RCC_PUSH_ENABLED=false`.
-8. Une fois les bindings et le secret validés, déployer la branche uniquement en
-   Preview avec le fichier Pages dédié. Ne jamais utiliser ce fichier sur main.
-   `npx wrangler pages deploy . --config wrangler.facebook-preview.toml --project-name rccnew --branch codex/facebook-news-import`.
-   Les scripts/documents locaux non commités doivent être exclus du dossier publié :
-   préférer une archive Git de la branche pour ce déploiement.
-9. Autoriser la lecture des imports sur Preview en passant son flag à true.
-   Déployer le Worker preview après validation, puis passer son flag sync à true
-   pour les tests réels : Cron `*/10 * * * *`. Sans ce flag aucun appel Meta n'a lieu.
+Chaque relecture Meta actualise l'URL D1. Les posts récents sont relus au Cron ;
+10 anciens ID sont recontrôlés par passage. Une URL ancienne peut donc rester
+indisponible jusqu'à ce que Meta fournisse une URL renouvelée. Les images ne sont
+pas archivées et leur disponibilité permanente n'est pas garantie. Les droits
+d'utilisation des photos et les conditions Meta restent applicables. Les autres
+formats (vidéos/Reels) ne sont pas copiés ; image principale seulement en V1.
 
-Un déploiement Cron peut commencer à s'exécuter dès sa création : ne mettre le
-flag à true qu'après revue des ressources et du token. Le Worker n'a pas de route
-publique de synchronisation, son fetch renvoie 404.
+## 1. Préparer la base existante — aucune recréation
 
-## Après tests et accord : préparer rccnew.pages.dev
+Les deux configurations contiennent déjà l'ID Preview ci-dessus :
+`wrangler.facebook-preview.toml` (Pages), `workers/facebook-sync.toml` (Worker).
+La base n'a pas été modifiée par le développement. Vérifier avant toute commande :
 
-Créer une base et un bucket dédiés nommés `rccnew-facebook` et
-`rccnew-facebook-media`, sans réutiliser les données preview. Remplacer les
-placeholders du Worker. Ajouter dans le **wrangler.toml existant**, sans retirer
-les KV ni les variables de migration, les blocs suivants (ID réel à renseigner) :
-
-```toml
-[[env.production.d1_databases]]
-binding = "RCC_FACEBOOK_DB"
-database_name = "rccnew-facebook"
-database_id = "ID_D1_REEL"
-migrations_dir = "migrations/facebook"
-
-[[env.production.r2_buckets]]
-binding = "RCC_FACEBOOK_MEDIA"
-bucket_name = "rccnew-facebook-media"
+```text
+npx wrangler d1 list --json
+npx wrangler d1 migrations list rccnew-facebook-preview --remote --config wrangler.facebook-preview.toml
 ```
 
-Ajouter `RCC_FACEBOOK_READ_ENABLED="false"` dans `[env.production.vars]` (pas à
-la fin d'un bloc bucket). Puis migration dédiée, installation du secret Worker,
-revue des bindings, tests, et seulement ensuite activation sur rccnew.pages.dev.
-Ne pas modifier les DNS/domaines, l'ancien projet, les clés VAPID ou les abonnements.
-Aucun secret Meta nécessaire dans Pages : seul le Worker parle à Graph API.
+Après validation, appliquer les migrations sur **cette seule base Preview** :
 
-## Tests et limites réelles
+```text
+npx wrangler d1 migrations apply rccnew-facebook-preview --remote --config wrangler.facebook-preview.toml
+```
 
-`npm test` inclut `scripts/test-facebook.js` (Node 22.13+ avec node:sqlite ; testé
-ici avec Node 24). SQLite réelle en mémoire pour la migration, les UPSERT, les
-verrous et les requêtes ; API Meta/R2 et réseau simulés. Tests des neuf cas demandés,
-plus chevauchement, retrait hashtag, dates futures, image malveillante/trop grosse,
-lecture d'image inactive, pagination invalide et fallback manuel dans le chargeur.
-`npm run validate`, `git diff --check`, compilation Functions et Worker dry-run.
+`0001_posts.sql` reste inchangée si elle a déjà été appliquée. `0002_direct_image_url.sql`
+ajoute `image_url` sans supprimer de ligne ni réécrire les articles. L'ancienne
+colonne `image_key` reste inutilisée pour compatibilité ; elle ne nécessite pas R2.
+Utiliser le gestionnaire de migrations, pas un rejeu manuel de l'ALTER TABLE.
 
-La programmation Meta réelle et les permissions ne sont pas certifiées par ces
-tests. L'accès /posts v25.0 a été déclaré fonctionnel par l'administrateur, mais
-le token n'est pas disponible dans cet environnement. Vérifier sa portée Page,
-validité et échéances dans le débogueur Meta. Les permissions communiquées sont
-pages_show_list, pages_read_engagement, business_management ; ne pas demander
-pages_manage_posts/Instagram pour ce lecteur.
+## 2. Connecter D1 à Pages Preview et au Worker
 
-Le Worker examine au maximum 125 posts récents (5 pages) par passage, plus 10
-anciens ID, avec budget de traitement de 4 minutes. `truncated:true` signale une
-fenêtre dépassée ou un budget atteint : un backfill contrôlé sera alors nécessaire.
-Pas de promesse d'import illimité de l'historique ou de latence garantie en cas
-de panne/rate limit. Éviter le plan Free si les limites CPU/sous-requêtes sont
-insuffisantes pour la volumétrie ; surveiller Workers, D1 et R2 avant activation.
-Une erreur token est journalisée `meta_token_invalid`, sans message Graph brut ;
-une erreur réseau `meta_network`. Nouvelle tentative au Cron suivant, pas de boucle
-de retry agressive. Mettre une alerte sur ces codes et `truncated`/`mediaErrors`.
+Préparer une archive Git propre de la branche pour ne pas publier les fichiers
+locaux non commités d'autres missions. Dans cette archive :
 
-Le navigateur intégré n'a pas pu atteindre localhost pendant cette session
-(ERR_CONNECTION_TIMED_OUT). La validation visuelle desktop/mobile reste donc
-à effectuer en Preview. Le serveur de fixtures `node scripts/preview-facebook.mjs`
-écoute uniquement 127.0.0.1:3338 et ne contient aucun secret ; il permet une revue
-locale sans token ni notifications.
+1. Vérifier `wrangler.facebook-preview.toml` : binding RCC_FACEBOOK_DB, nom/ID
+   existants ; `RCC_FACEBOOK_READ_ENABLED=false` et `RCC_PUSH_ENABLED=false`.
+2. Le déploiement explicite avec ce fichier raccordera D1 à Pages **Preview**.
+   Ne pas utiliser ce fichier pour main/Production.
+3. Le Worker possède le même binding D1 et `RCC_FACEBOOK_SYNC_ENABLED=false`.
+   Aucun binding KV, aucune clé VAPID, aucune ressource R2.
 
-## Retour arrière
+Commandes pour plus tard, seulement après validation des tests et de la base :
 
-Mettre le flag sync à false pour arrêter l'import ; mettre le flag read à false
-pour revenir immédiatement aux articles manuels. Ne supprimer ni les JSON ni D1
-ni les KV lors de cette opération. Une réactivation retrouve les mêmes ID sans
-doublon. Les futurs changements du Studio pourront utiliser la même API sans
-réécrire les articles manuels existants.
+```text
+npx wrangler pages deploy . --config wrangler.facebook-preview.toml --project-name rccnew --branch codex/facebook-news-import
+npx wrangler deploy --config workers/facebook-sync.toml
+```
+
+Le Worker déployé à false n'appelle pas Meta, même si le Cron est enregistré.
+Son endpoint HTTP renvoie 404, il n'offre pas de déclenchement public.
+
+## 3. Installer le secret sur le Worker uniquement
+
+L'administrateur conserve le jeton de Page validé pour /posts v25.0. Vérifier
+dans Access Token Debugger validité, Page, permissions et échéances. Les permissions
+communiquées sont pages_show_list, pages_read_engagement, business_management ;
+aucune permission de publication Facebook/Instagram requise pour ce lecteur.
+
+```text
+npx wrangler secret put RCC_FACEBOOK_PAGE_TOKEN --config workers/facebook-sync.toml
+```
+
+Saisir uniquement dans le prompt sécurisé prévu à cet effet ou le champ Secret du
+Worker dans Cloudflare. Jamais de valeur en argument, dans le chat ou dans GitHub.
+Vérifier la présence par le **nom** dans Workers > rccnew-facebook-sync-preview >
+Settings > Variables and Secrets. Ne pas l'ajouter aux variables Pages.
+
+## 4. Activation progressive Preview, après accord
+
+1. Vérifier D1 et le secret, puis déployer les deux composants avec flags false.
+2. Dans la configuration Pages Preview dédiée, passer seulement
+   `RCC_FACEBOOK_READ_ENABLED` à true et redéployer la branche Preview. L'API
+   `/api/facebook-news` doit répondre sans exposer d'information privée.
+3. Vérifier `/api/push/config` et conserver `RCC_PUSH_ENABLED=false`.
+4. Passer `RCC_FACEBOOK_SYNC_ENABLED=true` dans le fichier Worker, après revue du
+   nom preview et de l'ID D1, puis redéployer **uniquement le Worker Preview**.
+5. Attendre le prochain Cron (10 minutes), consulter les codes de logs et vérifier
+   une publication #ActuRCC déjà publiée ; puis absence de doublon au Cron suivant.
+6. Tester un post sans image, un avec image, un retrait du hashtag, une URL expirée,
+   une programmation devenue publique et l'affichage desktop/mobile. Aucun push.
+
+Ces commandes/activations n'ont pas été exécutées pendant cette modification.
+Ne pas activer le flux sur le domaine officiel. Ne pas fusionner la PR avant les
+tests réels. La future activation de rccnew Production fera l'objet d'un accord
+et d'une configuration distincte ; ne pas partager accidentellement la base Preview.
+
+## Quotas gratuits et limites
+
+Maximum 3 pages Meta (75 posts récents), 10 anciens ID recontrôlés et 15 écritures
+d'articles par passage. Les nouveaux imports passent avant les rafraîchissements,
+puis les plus anciens contrôles sont prioritaires. Un lot plus important dans cette
+fenêtre est traité progressivement aux Crons suivants. Aucun téléchargement média
+côté Worker. Ces bornes limitent les requêtes D1 et sous-requêtes réseau, sans
+nécessiter Workers Paid. CPU/quotas gratuits restent à surveiller en test réel ;
+en cas de dépassement, réduire la taille de lot, pas activer un plan payant.
+Un historique antérieur aux 75 posts récents peut nécessiter un backfill contrôlé.
+`truncated:true` signale un lot borné ; erreurs génériques sans message Graph brut,
+notamment meta_token_invalid, meta_rate_limit et meta_network. Pas de retry agressif :
+nouvelle tentative au Cron suivant. Aucun mécanisme ne renouvelle un token révoqué
+sans intervention de l'administrateur.
+
+## Tests et retour arrière
+
+`npm test`, `npm run validate`, `git diff --check`, compilation Functions et Worker
+en dry-run. Le test Facebook utilise une vraie SQLite locale en mémoire et un
+réseau simulé. Il vérifie notamment migration sans perte, idempotence, concurrence,
+images absentes/expirées/renouvelées, URL malveillantes, absence de token dans les
+images publiques, fallback des cartes et du lecteur, sécurité HTML et repli manuel.
+Le navigateur intégré n'avait pas accès à localhost lors de la phase précédente :
+la revue visuelle desktop/mobile reste à réaliser en Preview, sans la déclarer acquise.
+
+Retour arrière : flag Worker false pour arrêter la synchronisation ; flag Pages
+read false pour revenir aux actualités manuelles. Ne supprimer ni D1 ni les JSON,
+ni les KV. Aucun changement du service worker, du calendrier, des classements,
+du Studio, des abonnements, des domaines ou des DNS.
