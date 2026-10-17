@@ -6,15 +6,27 @@
 
   const formatDate = (value) => {
     if (!value) return '';
-    const date = new Date(`${value}T12:00:00`);
+    const date = new Date(/^\d{4}-\d{2}-\d{2}$/.test(value) ? `${value}T12:00:00` : value);
     if (Number.isNaN(date.getTime())) return '';
     return new Intl.DateTimeFormat('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' }).format(date);
   };
 
   const localImage = (value) => {
     if (!value) return FALLBACK_IMAGE;
-    if (/^https?:\/\//i.test(value)) return value;
-    return `./${String(value).replace(/^\.\//, '').replace(/^\//, '')}`;
+    try {
+      const url = new URL(value, window.location.href);
+      return ['https:', 'http:'].includes(url.protocol) && !url.username && !url.password ? url.href : FALLBACK_IMAGE;
+    } catch { return FALLBACK_IMAGE; }
+  };
+
+  const articleImage = (article) => {
+    if (article.source !== 'facebook') return localImage(article.image);
+    try {
+      const url = new URL(article.image);
+      return String(article.image).length <= 4096 && url.protocol === 'https:' && !url.username && !url.password && !url.port && !url.hash &&
+        ![...url.searchParams.keys()].some(key => /token|appsecret|authorization/i.test(key)) &&
+        ['fbcdn.net', 'fbsbx.com'].some(host => url.hostname === host || url.hostname.endsWith(`.${host}`)) ? url.href : FALLBACK_IMAGE;
+    } catch { return FALLBACK_IMAGE; }
   };
 
   const articleUrl = (article, index) => {
@@ -82,10 +94,8 @@
     const summary = hero.querySelector('[data-co-hero-summary]');
     const meta = hero.querySelector('[data-co-hero-meta]');
     const primary = hero.querySelector('[data-co-hero-primary]');
-    /* La V3.6.3 fait tourner les photos de fond elle-meme (data-cinematic-slide,
-       voir le bloc dedie dans script.js) : cette fonction ne gere plus que le
-       texte (titre/meta/resume/lien) de l'actualite mise en avant. */
-    const images = [...hero.querySelectorAll('[data-co-hero-image]')];
+    const media = hero.querySelector('[data-cinematic-hero]');
+    const images = [...hero.querySelectorAll('[data-co-hero-image], [data-cinematic-slide]')];
     const controls = hero.querySelector('[data-co-hero-controls]');
     const dots = hero.querySelector('[data-co-hero-dots]');
     const previous = hero.querySelector('[data-co-hero-previous]');
@@ -96,15 +106,25 @@
     let interval = 0;
     let transition = 0;
     let paused = false;
+    let imageRequest = 0;
+    let refreshPending = false;
+
+    const loadArticles = async () => {
+      const [manual, facebook] = await Promise.all([
+        fetch('./data/news.json', {cache:'no-store'}).then(r => {if (!r.ok) throw new Error('manual_news'); return r.json();}),
+        fetch('/api/facebook-news?limit=20', {cache:'no-store', signal:AbortSignal.timeout(6000)})
+          .then(r => {if (!r.ok) throw new Error('facebook_news'); return r.json();})
+          .catch(() => ({news:[]}))
+      ]);
+      const combined = [...(Array.isArray(manual) ? manual : manual.news || []),
+        ...(Array.isArray(facebook.news) ? facebook.news.map(item => ({...item, source:'facebook'})) : [])];
+      return [...new Map(combined.filter(item => item.published !== false).map((item,index) =>
+        [item.id || item.slug || `manual-${index}`, item])).values()]
+        .sort((a,b) => (Date.parse(b.date)||0)-(Date.parse(a.date)||0)).slice(0,3);
+    };
 
     try {
-      const response = await fetch('./data/news.json', { cache: 'no-store' });
-      if (!response.ok) throw new Error(`news.json (${response.status})`);
-      const data = await response.json();
-      articles = (Array.isArray(data) ? data : (data.news || []))
-        .filter((article) => article.published !== false)
-        .sort((a, b) => String(b.date || '').localeCompare(String(a.date || '')))
-        .slice(0, 3);
+      articles = await loadArticles();
     } catch (error) {
       console.warn('[RCC redesign] Hero actualités indisponible.', error.message);
     }
@@ -113,6 +133,9 @@
       controls.hidden = true;
       return;
     }
+    // The article carousel now owns these existing image layers; stop unrelated
+    // cinematic photos without changing their CSS, gradients or object-fit.
+    if (media) media.dataset.newsManaged = 'true';
 
     const updateDots = () => {
       [...dots.children].forEach((dot, index) => dot.setAttribute('aria-current', String(index === active)));
@@ -120,19 +143,28 @@
 
     const swapImage = (article) => {
       if (!images.length) return;
+      const request = ++imageRequest;
       const nextLayer = imageLayer === 0 ? 1 : 0;
-      const target = images[nextLayer];
-      target.onload = () => {
-        images[imageLayer].classList.remove('is-active');
+      const target = images[nextLayer] || images[0];
+      const image = new Image();
+      image.referrerPolicy = 'no-referrer';
+      const src = articleImage(article);
+      image.onload = () => {
+        if (request !== imageRequest) return;
+        target.referrerPolicy = 'no-referrer';
+        target.src = image.src;
+        images.forEach(layer => layer.classList.remove('is-active'));
         target.classList.add('is-active');
-        imageLayer = nextLayer;
+        imageLayer = images.indexOf(target);
       };
-      target.onerror = () => {
-        target.onerror = null;
-        target.src = FALLBACK_IMAGE;
+      image.onerror = () => {
+        if (request !== imageRequest || image.dataset.fallback === 'true') return;
+        image.dataset.fallback = 'true';
+        image.src = FALLBACK_IMAGE;
       };
-      target.src = localImage(article.image);
-      if (target.complete && target.naturalWidth) target.onload();
+      // Keep the complete signed URL. Browser cache keys include its query,
+      // so a renewed signature cannot reuse the expired URL's response.
+      image.src = src;
     };
 
     const applyArticle = (article, index) => {
@@ -171,8 +203,11 @@
     };
     const select = (index) => { show(index, false); start(); };
 
-    dots.innerHTML = articles.map((article, index) => `<button class="co-hero-dot" type="button" aria-label="Afficher l’actualité ${index + 1}" aria-current="${index === 0}"></button>`).join('');
-    [...dots.children].forEach((dot, index) => dot.addEventListener('click', () => select(index)));
+    const renderDots = () => {
+      dots.innerHTML = articles.map((article, index) => `<button class="co-hero-dot" type="button" aria-label="Afficher l’actualité ${index + 1}" aria-current="${index === active}"></button>`).join('');
+      [...dots.children].forEach((dot, index) => dot.addEventListener('click', () => select(index)));
+    };
+    renderDots();
     previous.addEventListener('click', () => select(active - 1));
     next.addEventListener('click', () => select(active + 1));
     hero.addEventListener('mouseenter', () => { paused = true; stop(); });
@@ -181,7 +216,24 @@
     hero.addEventListener('focusout', (event) => {
       if (!hero.contains(event.relatedTarget)) { paused = false; start(); }
     });
-    document.addEventListener('visibilitychange', start);
+    const refresh = async () => {
+      if (document.hidden || refreshPending) return;
+      refreshPending = true;
+      try {
+        const fresh = await loadArticles();
+        if (fresh.length) {
+          const id = articles[active]?.id;
+          articles = fresh;
+          active = Math.max(0, articles.findIndex(article => article.id === id));
+          renderDots();
+          show(active, true);
+          controls.hidden = articles.length < 2;
+        }
+      } catch { /* Keep the already displayed articles if a refresh fails. */ }
+      finally {refreshPending = false;start();}
+    };
+    document.addEventListener('visibilitychange', () => {start();if (!document.hidden) refresh();});
+    window.addEventListener('pageshow', event => {if (event.persisted) refresh();});
 
     controls.hidden = articles.length < 2;
     show(0, true);

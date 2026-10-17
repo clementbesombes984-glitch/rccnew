@@ -391,6 +391,7 @@ window.addEventListener('appinstalled', () => {
   let timer = null;
 
   const show = (index) => {
+    if (hero.dataset.newsManaged === 'true') return;
     slides[current]?.classList.remove('is-active');
     current = (index + slides.length) % slides.length;
     slides[current].classList.add('is-active');
