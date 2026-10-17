@@ -97,6 +97,20 @@ assert.equal(writes, savedWrites);
 const nextDayFast = await syncCalendars(fastEnv, fetcher, now + 86400000);
 assert(nextDayFast.results.every(r => r.status === 'ok'));
 assert.equal(writes, savedWrites + 9);
+// Existing hash-matched snapshots without metadata must be upgraded exactly once.
+metadata.clear();
+const legacyBefore = new Map(kvData);
+const upgrade = await syncCalendars(fastEnv, fetcher, now + 86400000);
+assert(upgrade.results.every(r => r.status === 'unchanged' && r.metadataUpgraded && !r.parsed));
+for (const cat of CATEGORIES) assert.equal(kvData.get(`calendar:${cat}`), legacyBefore.get(`calendar:${cat}`));
+let cancelledStreams = 0;
+fastKv.getWithMetadata = async key => ({metadata:metadata.get(key), value:new ReadableStream({
+  start(controller) {controller.enqueue(new TextEncoder().encode('not JSON: must never be decoded'));},
+  cancel() {cancelledStreams++;}
+})});
+const streamed = await syncCalendars(fastEnv, fetcher, now + 86400000);
+assert(streamed.results.every(r => r.metadataHit && !r.metadataUpgraded && !r.parsed && r.events === 1));
+assert.equal(cancelledStreams, 9);
 assert.equal(await readFile(new URL('../data/matches.json',import.meta.url),'utf8'),baseline);
 // Run the actual browser controller with a simulated DOM/API, not just model helpers.
 const nodes = new Map();

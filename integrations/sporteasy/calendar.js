@@ -146,23 +146,34 @@ export async function syncCalendars(env, fetcher = fetch, now = Date.now()) {
       const key = `calendar:${category}`;
       // Read small metadata first: unchanged feeds need no JSON decoding of all events.
       // Older snapshots (and KV adapters without metadata) keep the original safe path.
-      let old;
+      let old, legacyValue;
+      let metadataHit = false;
       if (typeof env.RCC_SPORTEASY_KV.getWithMetadata === 'function') {
-        const cached = await env.RCC_SPORTEASY_KV.getWithMetadata(key, 'text');
+        const cached = await env.RCC_SPORTEASY_KV.getWithMetadata(key, 'stream');
         old = cached.metadata;
-        if (!old && cached.value) old = JSON.parse(cached.value);
+        metadataHit = Boolean(old);
+        if (!old && cached.value) {
+          legacyValue = typeof cached.value === 'string' ? cached.value : await new Response(cached.value).text();
+          old = JSON.parse(legacyValue);
+        } else await cached.value?.cancel?.();
       } else old = await env.RCC_SPORTEASY_KV.get(key, 'json');
       const day = new Date(now).toISOString().slice(0, 10);
       if (old?.formatVersion === 1 && old.hash === hash && old.expandedDay === day) {
+        // One-time metadata upgrade: preserve the exact stored snapshot and dates.
+        if (legacyValue) await env.RCC_SPORTEASY_KV.put(key, legacyValue, {
+          metadata: { formatVersion: 1, hash, expandedDay: day, eventCount: old.events.length, rawCount: old.rawCount }
+        });
         await env.RCC_SPORTEASY_KV.put(`checked:${category}`, JSON.stringify({ checkedAt: new Date(now).toISOString() }));
-        results.push({ category, status: 'unchanged', events: old.eventCount ?? old.events.length, raw: old.rawCount });
+        results.push({ category, status: 'unchanged', events: old.eventCount ?? old.events.length, raw: old.rawCount,
+          metadataHit, metadataUpgraded: Boolean(legacyValue), parsed: false });
         continue;
       }
       const parsed = await parseCalendar(body, category, now);
       await env.RCC_SPORTEASY_KV.put(key, JSON.stringify({ ...parsed, formatVersion: 1, hash, expandedDay: day, syncedAt: new Date(now).toISOString() }), {
         metadata: { formatVersion: 1, hash, expandedDay: day, eventCount: parsed.events.length, rawCount: parsed.rawCount }
       });
-      results.push({ category, status: 'ok', events: parsed.events.length, raw: parsed.rawCount, withheld: parsed.withheld, cancelled: parsed.cancelled });
+      results.push({ category, status: 'ok', events: parsed.events.length, raw: parsed.rawCount, withheld: parsed.withheld, cancelled: parsed.cancelled,
+        metadataHit, metadataUpgraded: false, parsed: true });
     } catch {
       // Deliberately no exception message, URL, ICS or personal fields in logs.
       results.push({ category, status: 'retained_last_valid' });

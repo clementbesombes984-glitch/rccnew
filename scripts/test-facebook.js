@@ -53,6 +53,7 @@ assert.deepEqual([firstSync.received, firstSync.examined, firstSync.matching, fi
 assert(Number.isFinite(firstSync.durationMs) && firstSync.durationMs >= 0);
 const secondSync = await syncFacebook({ ...env, RCC_FACEBOOK_DB: d1() }, fetcher); // restarted importer, same persistent store
 assert.deepEqual([secondSync.created, secondSync.updated, secondSync.processed, secondSync.unchanged], [0, 0, 0, 1]);
+assert(Object.values(secondSync.changedFields).every(count => count === 0));
 // Repeated marker tests cannot retain the lastIndex of a global regexp.
 for (let i = 0; i < 100; i++) assert(eligible('#ActuRCC'));
 // Irrelevant posts must not pay for permalink/image/date/title normalization.
@@ -101,6 +102,8 @@ assert.equal(sql.prepare('SELECT image_url FROM facebook_posts').get().image_url
 current = [{ ...post, full_picture: 'https://scontent.fbcdn.net/photo.jpg?oe=renewed' }];
 const renewedImage = await syncFacebook(env, fetcher);
 assert.deepEqual([renewedImage.created, renewedImage.updated], [0, 1]);
+assert.deepEqual(renewedImage.changedFields, {title:0,body:0,date:0,permalink:0,image:1,active:0});
+assert(!JSON.stringify(renewedImage).includes('scontent.fbcdn.net'));
 assert.equal(sql.prepare('SELECT image_url FROM facebook_posts').get().image_url, current[0].full_picture);
 current = [{ ...post, full_picture: `https://scontent.fbcdn.net/${env.RCC_FACEBOOK_PAGE_TOKEN}` }];
 await syncFacebook(env, fetcher);

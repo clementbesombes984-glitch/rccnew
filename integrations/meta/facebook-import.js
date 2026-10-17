@@ -86,7 +86,8 @@ export async function syncFacebook(env, fetcher = fetch) {
   const owner = crypto.randomUUID();
   const started = Date.now();
   const stats = { received: 0, matching: 0, rejected: 0, examined: 0, pages: 0,
-    rechecked: 0, created: 0, updated: 0, unchanged: 0 };
+    rechecked: 0, created: 0, updated: 0, unchanged: 0,
+    changedFields: { title: 0, body: 0, date: 0, permalink: 0, image: 0, active: 0 } };
   const lock = await db.prepare(`INSERT INTO facebook_sync_lock(id,owner,expires_at) VALUES(1,?,?)
     ON CONFLICT(id) DO UPDATE SET owner=excluded.owner,expires_at=excluded.expires_at
     WHERE facebook_sync_lock.expires_at < ?`).bind(owner, started + 540000, started).run();
@@ -152,6 +153,13 @@ export async function syncFacebook(env, fetcher = fetch) {
       // Store only a validated CDN URL, never the Page token or a fetched image.
       const imageUrl = post.active && !post.imageUrl.includes(env.RCC_FACEBOOK_PAGE_TOKEN) ? post.imageUrl : '';
       const old = stored.get(post.id);
+      if (old) {
+        for (const [field, differs] of Object.entries({title: old.title !== post.title, body: old.body !== post.body,
+          date: old.published_at !== post.date, permalink: old.permalink !== post.permalink,
+          image: old.image_url !== imageUrl, active: old.active !== post.active})) {
+          if (differs) stats.changedFields[field]++;
+        }
+      }
       if (old && old.title === post.title && old.body === post.body && old.published_at === post.date &&
           old.permalink === post.permalink && old.image_url === imageUrl && old.active === post.active) {
         // Preserve rotation and fencing without rewriting unchanged text/media columns.
