@@ -54,6 +54,7 @@ assert(Number.isFinite(firstSync.durationMs) && firstSync.durationMs >= 0);
 const secondSync = await syncFacebook({ ...env, RCC_FACEBOOK_DB: d1() }, fetcher); // restarted importer, same persistent store
 assert.deepEqual([secondSync.created, secondSync.updated, secondSync.processed, secondSync.unchanged], [0, 0, 0, 1]);
 assert(Object.values(secondSync.changedFields).every(count => count === 0));
+assert.equal(secondSync.d1Reads,1,'Recent posts and rotating checks reuse one content read');
 // Repeated marker tests cannot retain the lastIndex of a global regexp.
 for (let i = 0; i < 100; i++) assert(eligible('#ActuRCC'));
 // Irrelevant posts must not pay for permalink/image/date/title normalization.
@@ -103,6 +104,7 @@ current = [{ ...post, full_picture: 'https://scontent.fbcdn.net/photo.jpg?oe=ren
 const renewedImage = await syncFacebook(env, fetcher);
 assert.deepEqual([renewedImage.created, renewedImage.updated], [0, 1]);
 assert.deepEqual(renewedImage.changedFields, {title:0,body:0,date:0,permalink:0,image:1,active:0});
+assert.equal(renewedImage.imageOnlyUpdated,1);
 assert(!JSON.stringify(renewedImage).includes('scontent.fbcdn.net'));
 assert.equal(sql.prepare('SELECT image_url FROM facebook_posts').get().image_url, current[0].full_picture);
 current = [{ ...post, full_picture: `https://scontent.fbcdn.net/${env.RCC_FACEBOOK_PAGE_TOKEN}` }];
@@ -232,7 +234,7 @@ assert(Number.isFinite(JSON.parse(errorLogs[0]).durationMs));
 // Storage errors remain sanitized, preserve existing articles and release the lease.
 const beforeFailure = sql.prepare('SELECT count(*) n FROM facebook_posts').get().n;
 const brokenDb = { prepare(query) {
-  if (query.startsWith('SELECT facebook_id FROM')) throw new Error('private database details');
+  if (query.includes('FROM facebook_posts ORDER BY checked_at')) throw new Error('private database details');
   return env.RCC_FACEBOOK_DB.prepare(query);
 } };
 await assert.rejects(() => syncFacebook({ ...env, RCC_FACEBOOK_DB: brokenDb }, fetcher),
@@ -302,5 +304,34 @@ assert.equal(outside.examined,10);assert.equal(outside.received,9);
 assert.equal(sql.prepare('SELECT count(*) n FROM facebook_posts').get().n,1);
 assert.equal(sql.prepare('SELECT body FROM facebook_posts').get().body,'Texte réellement modifié');
 assert.equal(await readFile(new URL('../data/news.json', import.meta.url), 'utf8'), manualNews);
+// The merged read still includes globally oldest checks even with recent IDs
+// outside that group. Never skip old imports or touch unrelated rows.
+sql.exec('DELETE FROM facebook_posts');
+for(let i=0;i<20;i++) sql.prepare(`INSERT INTO facebook_posts
+ (facebook_id,page_id,title,body,published_at,permalink,image_url,active,checked_at)
+ VALUES(?,?,?,?,?,?,?,?,?)`).run(`${PAGE_ID}_${2000+i}`,PAGE_ID,'Stored','Stored',post.created_time,post.permalink_url,'',1,`2026-10-${String(i+1).padStart(2,'0')}`);
+let rechecks=[];
+const mergedRead=await syncFacebook(env,async url=>{
+ const u=new URL(url);
+ if(u.pathname.endsWith('/posts'))return Response.json({data:[{...post,id:`${PAGE_ID}_2019`}]});
+ const id=u.pathname.split('/').at(-1);rechecks.push(id);
+ return Response.json({...post,id});
+});
+assert.equal(mergedRead.d1Reads,1);assert.equal(rechecks.length,10);
+assert.deepEqual(rechecks,Array.from({length:10},(_,i)=>`${PAGE_ID}_${2000+i}`));
+assert.equal(sql.prepare('SELECT count(*) n FROM facebook_posts').get().n,20);
+assert.equal(sql.prepare(`SELECT body FROM facebook_posts WHERE facebook_id='${PAGE_ID}_2018'`).get().body,'Stored');
+// No timeout survives a completed Graph request, including invalid HTTP/body data.
+const oldSetTimeout=globalThis.setTimeout,oldClearTimeout=globalThis.clearTimeout;
+let timersCreated=0,timersCleared=0;
+globalThis.setTimeout=()=>{timersCreated++;return timersCreated;};
+globalThis.clearTimeout=()=>{timersCleared++;};
+try {
+ await graph('fixture','fixture',{},async()=>Response.json({data:[]}));
+ await assert.rejects(()=>graph('fixture','fixture',{},async()=>{throw new TypeError('private');}));
+ await assert.rejects(()=>graph('fixture','fixture',{},async()=>new Response('',{status:302})));
+ await assert.rejects(()=>graph('fixture','fixture',{},async()=>new Response('invalid')));
+ assert.equal(timersCreated,timersCleared);
+}finally{globalThis.setTimeout=oldSetTimeout;globalThis.clearTimeout=oldClearTimeout;}
 sql.close();
 console.log('Facebook sans R2 : migration additive, hashtag, SQLite idempotence/concurrence, images absentes/expirées/renouvelées, token, API, repli manuel et XSS : OK. Aucun appel distant ni push.');

@@ -33,9 +33,12 @@ const httpError = (status, code) => code === 190 || status === 401 ? 'meta_token
 export async function graph(path, token, params = {}, fetcher = fetch) {
   const url = new URL(`https://graph.facebook.com/v25.0/${path}`);
   for (const [key, value] of Object.entries(params)) url.searchParams.set(key, value);
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 15000);
+  try {
   let init;
   try {
-    init = { headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(15000), redirect: 'manual' };
+    init = { headers: { Authorization: `Bearer ${token}` }, signal: controller.signal, redirect: 'manual' };
     // Validate construction separately: workerd rejects redirect:"error" before any network I/O.
     new Request(url.href, init);
   } catch (error) { throw new ImportError('meta_request_invalid', { stage: 'request', exceptionType: exceptionType(error) }); }
@@ -63,6 +66,7 @@ export async function graph(path, token, params = {}, fetcher = fetch) {
       ...(metaCode !== undefined ? { metaCode } : {}), ...(metaSubcode !== undefined ? { metaSubcode } : {}) });
   }
   return data;
+  } finally { clearTimeout(timer); }
 }
 export function mediaUrl(value) {
   if (typeof value !== 'string' || !value || value.length > 4096) return null;
@@ -86,7 +90,7 @@ export async function syncFacebook(env, fetcher = fetch) {
   const owner = crypto.randomUUID();
   const started = Date.now();
   const stats = { received: 0, matching: 0, rejected: 0, examined: 0, pages: 0,
-    rechecked: 0, created: 0, updated: 0, unchanged: 0,
+    rechecked: 0, created: 0, updated: 0, unchanged: 0, imageOnlyUpdated: 0, d1Reads: 0,
     changedFields: { title: 0, body: 0, date: 0, permalink: 0, image: 0, active: 0 } };
   const lock = await db.prepare(`INSERT INTO facebook_sync_lock(id,owner,expires_at) VALUES(1,?,?)
     ON CONFLICT(id) DO UPDATE SET owner=excluded.owner,expires_at=excluded.expires_at
@@ -103,13 +107,22 @@ export async function syncFacebook(env, fetcher = fetch) {
     stats.received = data.data.length;
     for (const post of data.data) posts.set(post.id, post);
     // Recheck old imported IDs too. Absence from /posts never means deletion.
-    const known = await db.prepare('SELECT facebook_id FROM facebook_posts ORDER BY checked_at ASC LIMIT 10').all();
-    for (const row of known.results) {
+    const recentIds = [...posts.keys()].filter(id => pagePostId.test(id));
+    // One bounded content read for both the recent window and ten oldest checks.
+    // All global oldest ten are included; ordering then slicing preserves rotation.
+    const known = await db.prepare(`SELECT facebook_id,checked_at,title,body,published_at,permalink,image_url,active FROM facebook_posts
+      WHERE facebook_id IN (${recentIds.length ? recentIds.map(() => '?').join(',') : 'NULL'})
+      OR facebook_id IN (SELECT facebook_id FROM facebook_posts ORDER BY checked_at ASC LIMIT 10)
+      ORDER BY checked_at ASC`).bind(...recentIds).all();
+    stats.d1Reads++;
+    const stored = new Map(known.results.map(row => [row.facebook_id, row]));
+    for (const row of known.results.slice(0,10)) {
       if (posts.has(row.facebook_id)) continue;
       stats.rechecked++;
       try {
         const post = await graph(row.facebook_id, env.RCC_FACEBOOK_PAGE_TOKEN,
           { fields: 'id,message,created_time,permalink_url,full_picture' }, fetcher);
+        if (post.id !== row.facebook_id) throw new ImportError('meta_response');
         posts.set(post.id, post);
       } catch (error) {
         if (error.code !== 'meta_denied') throw error;
@@ -122,11 +135,7 @@ export async function syncFacebook(env, fetcher = fetch) {
     let imported = 0;
     // Read identity/check order first, so irrelevant posts never parse dates, URLs or titles.
     // Include known IDs without a marker: removing the marker must still deactivate them.
-    const ids = [...posts.keys()].filter((id) => pagePostId.test(id));
-    const existing = ids.length ? await db.prepare(`SELECT facebook_id,checked_at,title,body,published_at,permalink,image_url,active FROM facebook_posts
-      WHERE facebook_id IN (${ids.map(() => '?').join(',')})`).bind(...ids).all() : { results: [] };
-    const previous = new Map(existing.results.map((row) => [row.facebook_id, row.checked_at]));
-    const stored = new Map(existing.results.map(row => [row.facebook_id, row]));
+    const previous = new Map([...stored].map(([id,row]) => [id,row.checked_at]));
     const candidates = [];
     const now = Date.now();
     for (const source of posts.values()) {
@@ -148,15 +157,17 @@ export async function syncFacebook(env, fetcher = fetch) {
       // Store only a validated CDN URL, never the Page token or a fetched image.
       const imageUrl = post.active && !post.imageUrl.includes(env.RCC_FACEBOOK_PAGE_TOKEN) ? post.imageUrl : '';
       const old = stored.get(post.id);
+      let contentChanged = !old;
+      const imageChanged = !old || old.image_url !== imageUrl;
       if (old) {
-        for (const [field, differs] of Object.entries({title: old.title !== post.title, body: old.body !== post.body,
-          date: old.published_at !== post.date, permalink: old.permalink !== post.permalink,
-          image: old.image_url !== imageUrl, active: old.active !== post.active})) {
-          if (differs) stats.changedFields[field]++;
-        }
+        if (old.title !== post.title) {stats.changedFields.title++;contentChanged=true;}
+        if (old.body !== post.body) {stats.changedFields.body++;contentChanged=true;}
+        if (old.published_at !== post.date) {stats.changedFields.date++;contentChanged=true;}
+        if (old.permalink !== post.permalink) {stats.changedFields.permalink++;contentChanged=true;}
+        if (old.active !== post.active) {stats.changedFields.active++;contentChanged=true;}
+        if (imageChanged) stats.changedFields.image++;
       }
-      if (old && old.title === post.title && old.body === post.body && old.published_at === post.date &&
-          old.permalink === post.permalink && old.image_url === imageUrl && old.active === post.active) {
+      if (!contentChanged && !imageChanged) {
         // Preserve rotation and fencing without rewriting unchanged text/media columns.
         const check = await db.prepare(`UPDATE facebook_posts SET checked_at=? WHERE facebook_id=?
           AND EXISTS(SELECT 1 FROM facebook_sync_lock WHERE id=1 AND owner=? AND expires_at>?)`)
@@ -164,14 +175,14 @@ export async function syncFacebook(env, fetcher = fetch) {
         stats.unchanged += check.meta.changes;
         continue;
       }
-      if (old && old.title === post.title && old.body === post.body && old.published_at === post.date &&
-          old.permalink === post.permalink && old.active === post.active) {
+      if (!contentChanged) {
         // A renewed signed CDN URL must be saved, without rewriting editorial fields.
         const write = await db.prepare(`UPDATE facebook_posts SET image_url=?,checked_at=? WHERE facebook_id=?
           AND EXISTS(SELECT 1 FROM facebook_sync_lock WHERE id=1 AND owner=? AND expires_at>?)`)
           .bind(imageUrl, new Date().toISOString(), post.id, owner, Date.now()).run();
         imported += write.meta.changes;
         stats.updated += write.meta.changes;
+        stats.imageOnlyUpdated += write.meta.changes;
         continue;
       }
       const write = await db.prepare(UPSERT).bind(post.id, PAGE_ID, post.title, post.body, post.date,
