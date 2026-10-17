@@ -157,10 +157,10 @@ export function reconcileCalendar(oldEvents, parsed, now, mode, tracked = new Se
   return { events: [...merged.values()], created, updated, removed };
 }
 
-export function feedConfig(secret) {
+export function feedConfig(secret, categories = CATEGORIES) {
   let feeds;
   try { feeds = JSON.parse(secret); } catch { throw new Error('feed_configuration'); }
-  for (const category of CATEGORIES) {
+  for (const category of categories) {
     const url = new URL(String(feeds[category] || '').replace(/^webcal:/, 'https:'));
     if (url.protocol !== 'https:' || url.hostname !== 'calendar.sporteasy.net' || url.port || url.username || url.password || url.search || url.hash || !/^\/icalendars\/team\/\d+\/[a-f0-9]{32}\.ics$/.test(url.pathname)) throw new Error('feed_configuration');
     feeds[category] = url.href;
@@ -170,10 +170,12 @@ export function feedConfig(secret) {
 export async function syncCalendars(env, fetcher = fetch, now = Date.now(), options = {}) {
   if (env.RCC_SPORTEASY_SYNC_ENABLED !== 'true') return { status: 'disabled' };
   if (!env.RCC_SPORTEASY_KV) throw new Error('storage_missing');
-  const feeds = feedConfig(env.RCC_SPORTEASY_FEEDS);
+  const categories = options.category ? [options.category] : CATEGORIES;
+  if (categories.some(category => !CATEGORIES.includes(category))) throw new Error('invalid_category');
+  const feeds = feedConfig(env.RCC_SPORTEASY_FEEDS, categories);
   const results = [];
   // Sequential categories keep peak memory and concurrent outgoing connections bounded.
-  for (const category of CATEGORIES) {
+  for (const category of categories) {
     try {
       const response = await fetcher(feeds[category], { redirect: 'manual', signal: AbortSignal.timeout(20000), headers: { Accept: 'text/calendar' } });
       if (!response.ok) { await response.body?.cancel(); throw new Error('feed_http'); }

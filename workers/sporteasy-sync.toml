@@ -3,7 +3,7 @@ main = "sporteasy-sync.js"
 compatibility_date = "2026-10-16"
 
 [triggers]
-crons = ["*/30 * * * *"]
+crons = ["*/10 * * * *"]
 
 [vars]
 RCC_SPORTEASY_SYNC_ENABLED = "false"
@@ -11,3 +11,11 @@ RCC_SPORTEASY_SYNC_ENABLED = "false"
 [[kv_namespaces]]
 binding = "RCC_SPORTEASY_KV"
 id = "d7df448506d7441a9d22dc4be96a291c"
+
+[[durable_objects.bindings]]
+name = "RCC_SPORTEASY_COORDINATOR"
+class_name = "SportEasyCoordinator"
+
+[[migrations]]
+tag = "sporteasy-coordinator-v1"
+new_sqlite_classes = ["SportEasyCoordinator"]
