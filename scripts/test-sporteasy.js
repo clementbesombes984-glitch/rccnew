@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import vm from 'node:vm';
-import { parseCalendar, syncCalendars, CATEGORIES, publicText, eventType } from '../integrations/sporteasy/calendar.js';
+import { parseCalendar, syncCalendars, reconcileCalendar, CATEGORIES, publicText, eventType } from '../integrations/sporteasy/calendar.js';
 import { onRequestGet } from '../functions/api/sporteasy-calendar.js';
 import { CATEGORY, TYPES, categoriesFor, typeFor, dayKeys, visible } from '../calendar-model.js';
 const wrap = (...events) => `BEGIN:VCALENDAR\r\nVERSION:2.0\r\n${events.join('\r\n')}\r\nEND:VCALENDAR\r\n`;
@@ -111,6 +111,50 @@ fastKv.getWithMetadata = async key => ({metadata:metadata.get(key), value:new Re
 const streamed = await syncCalendars(fastEnv, fetcher, now + 86400000);
 assert(streamed.results.every(r => r.metadataHit && !r.metadataUpgraded && !r.parsed && r.events === 1));
 assert.equal(cancelledStreams, 9);
+// Priority J..J+30 never replaces the full calendar, and follows moved known UIDs.
+const fixtureAt = (uid, days, title='Match RCC', extra='') => {
+  const start = new Date(now + days*86400000).toISOString().replace(/[-:]/g,'').replace('.000','');
+  const end = new Date(now + days*86400000 + 3600000).toISOString().replace(/[-:]/g,'').replace('.000','');
+  return `BEGIN:VEVENT\r\nUID:${uid}\r\nDTSTART:${start}\r\nDTEND:${end}\r\nSUMMARY:${title}\r\n${extra}\r\nEND:VEVENT`;
+};
+let priorityRows = (await parseCalendar(wrap(fixtureAt('past',-10),fixtureAt('near',15),fixtureAt('far',60)), 'M8',now)).events;
+const applyPriority = async (source, mode='priority') => {
+  const tracked = new Set(priorityRows.filter(e=>Date.parse(e.end)>=now && Date.parse(e.start)<=now+30*86400000).map(e=>e.id.slice(3,67)));
+  const p=await parseCalendar(source,'M8',now,{mode,tracked});
+  const r=reconcileCalendar(priorityRows,p,now,mode,tracked); priorityRows=r.events; return r;
+};
+const baseSource = wrap(fixtureAt('past',-10),fixtureAt('near',15),fixtureAt('far',60));
+assert.equal((await applyPriority(baseSource)).events.length,3);
+const additions = wrap(fixtureAt('past',-10),fixtureAt('near',15,'Match modifié'),fixtureAt('far',60,'Match lointain modifié'),fixtureAt('new7',7),fixtureAt('new60',60));
+await applyPriority(additions);
+assert(priorityRows.some(e=>e.title==='Match modifié'));
+assert(!priorityRows.some(e=>e.title==='Match lointain modifié'));
+assert.equal(priorityRows.length,4,'J+7 appears immediately, J+60 is deferred');
+await applyPriority(additions,'full');
+assert(priorityRows.some(e=>e.title==='Match lointain modifié'));
+assert.equal(priorityRows.length,5);
+const movedSource=wrap(fixtureAt('past',-10),fixtureAt('near',60,'Match déplacé'),fixtureAt('far',60),fixtureAt('new7',7),fixtureAt('new60',60));
+await applyPriority(movedSource);
+assert.equal(priorityRows.filter(e=>e.title==='Match déplacé').length,1);
+assert(!priorityRows.some(e=>e.start===new Date(now+15*86400000).toISOString()));
+await applyPriority(wrap(fixtureAt('cancel25',25),fixtureAt('far',60)));
+const cancelled25=await applyPriority(wrap(fixtureAt('cancel25',25,'Match RCC','STATUS:CANCELLED'),fixtureAt('far',60)));
+assert.equal(cancelled25.removed,1);
+assert(priorityRows.some(e=>e.start===new Date(now-10*86400000).toISOString()),'Absent historical UID remains archived');
+// Unknown omissions in an otherwise valid feed never constitute cancellation.
+const retainedCount=priorityRows.length;
+await applyPriority(wrap(fixtureAt('unrelated',80)),'full');
+assert.equal(priorityRows.length,retainedCount+1);
+// Daily full bootstrap, unchanged quick path, and next full pass (network simulated).
+const dailyStore=new Map();
+const dailyKv={async get(k){return dailyStore.has(k)?JSON.parse(dailyStore.get(k)):null;},async put(k,v){dailyStore.set(k,v);}};
+const dailyEnv={...env,RCC_SPORTEASY_KV:dailyKv};
+const bootstrap=await syncCalendars(dailyEnv,fetcher,now,{mode:'priority'});
+assert(bootstrap.results.every(r=>r.mode==='full'&&r.created===1));
+const normal=await syncCalendars(dailyEnv,fetcher,now,{mode:'priority'});
+assert(normal.results.every(r=>r.mode==='priority'&&r.status==='unchanged'&&r.snapshotWrites===0));
+const daily=await syncCalendars(dailyEnv,fetcher,now+86400000,{mode:'full'});
+assert(daily.results.every(r=>r.mode==='full'&&r.created===0&&r.updated===0&&r.removed===0));
 assert.equal(await readFile(new URL('../data/matches.json',import.meta.url),'utf8'),baseline);
 // Run the actual browser controller with a simulated DOM/API, not just model helpers.
 const nodes = new Map();
