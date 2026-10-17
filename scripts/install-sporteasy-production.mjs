@@ -18,7 +18,7 @@ async function cf(path,init={}){
 }
 const kv={
  async get(key){const response=await fetch(`${base}/storage/kv/namespaces/${namespace}/values/${encodeURIComponent(key)}`,{headers:{Authorization:`Bearer ${credential}`}});if(response.status===404)return null;if(!response.ok)throw Error('storage_read');return response.json();},
- async put(key,value){if(!/^calendar:(M6|M8|M10|M12|M14|M16|M19|Cadettes|Seniors)$/.test(key))throw Error('invalid_target');await cf(`/storage/kv/namespaces/${namespace}/values/${encodeURIComponent(key)}`,{method:'PUT',body:value});}
+ async put(key,value,options){if(!/^(calendar|checked):(M6|M8|M10|M12|M14|M16|M19|Cadettes|Seniors)$/.test(key))throw Error('invalid_target');let body=value;if(options?.metadata){body=new FormData();body.append('value',new Blob([value]),'value');body.append('metadata',JSON.stringify(options.metadata));}await cf(`/storage/kv/namespaces/${namespace}/values/${encodeURIComponent(key)}`,{method:'PUT',body});}
 };
 try{
  await mkdir(directory,{recursive:true});
@@ -44,6 +44,17 @@ try{
   const counts=[],ids=[];for(const category of CATEGORIES){const s=await kv.get(`calendar:${category}`);counts.push({category,events:s.events.length});ids.push(...s.events.map(e=>e.id));}
   const report={at:new Date().toISOString(),counts,total:ids.length,unique:new Set(ids).size};
   await writeFile(`${directory}/initialization.json`,JSON.stringify(report,null,2));console.log(JSON.stringify(report));
+ }else if(mode==='metadata'){
+  const settings=await(await cf('/workers/scripts/rccnew-sporteasy-sync-production/settings')).json();
+  if(settings.result.bindings.find(b=>b.name==='RCC_SPORTEASY_SYNC_ENABLED')?.text!=='false')throw Error('worker_must_be_disabled');
+  const snapshotBackup={};for(const category of CATEGORIES){snapshotBackup[category]=await(await cf(`/storage/kv/namespaces/${namespace}/values/${encodeURIComponent(`calendar:${category}`)}`)).text();}
+  await writeFile(`${directory}/before-metadata.json`,JSON.stringify(snapshotBackup),{flag:'wx'});
+  for(const category of CATEGORIES){const value=snapshotBackup[category],s=JSON.parse(value);if(!s.fullDay||!s.expandedDay||!s.hash)throw Error('metadata_missing');
+   await kv.put(`calendar:${category}`,value,{metadata:{formatVersion:1,hash:s.hash,expandedDay:s.expandedDay,fullDay:s.fullDay,eventCount:s.events.length,rawCount:s.rawCount}});
+   const metadata=(await(await cf(`/storage/kv/namespaces/${namespace}/metadata/${encodeURIComponent(`calendar:${category}`)}`)).json()).result;
+   if(metadata.fullDay!==s.fullDay||metadata.eventCount!==s.events.length)throw Error('metadata_readback');
+   console.log(JSON.stringify({category,events:s.events.length,metadataVerified:true,eventContentUnchanged:true}));
+  }
  }else if(mode==='verify'){
   const backup=JSON.parse(await readFile(`${directory}/before.json`,'utf8'));
   for(const name of ['matches','news']){
