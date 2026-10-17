@@ -94,19 +94,14 @@ export async function syncFacebook(env, fetcher = fetch) {
   if (!lock.meta.changes) return { status: 'busy' };
   try {
     const posts = new Map();
-    let after;
     let more = false;
-    for (let page = 0; page < 3; page++) {
-      const data = await graph(`${PAGE_ID}/posts`, env.RCC_FACEBOOK_PAGE_TOKEN,
-        { fields: 'id,message,created_time,permalink_url,full_picture', limit: '25', ...(after ? { after } : {}) }, fetcher);
-      if (!Array.isArray(data.data)) throw new ImportError('meta_response');
-      stats.pages++;
-      stats.received += data.data.length;
-      for (const post of data.data) posts.set(post.id, post);
-      after = data.paging?.cursors?.after;
-      more = Boolean(data.paging?.next && after);
-      if (!more) break;
-    }
+    // Select the recent window BEFORE hashtag filtering. Never follow paging.next.
+    const data = await graph(`${PAGE_ID}/posts`, env.RCC_FACEBOOK_PAGE_TOKEN,
+      { fields: 'id,message,created_time,permalink_url,full_picture', limit: '10' }, fetcher);
+    if (!Array.isArray(data.data) || data.data.length > 10) throw new ImportError('meta_response');
+    stats.pages = 1;
+    stats.received = data.data.length;
+    for (const post of data.data) posts.set(post.id, post);
     // Recheck old imported IDs too. Absence from /posts never means deletion.
     const known = await db.prepare('SELECT facebook_id FROM facebook_posts ORDER BY checked_at ASC LIMIT 10').all();
     for (const row of known.results) {
@@ -167,6 +162,16 @@ export async function syncFacebook(env, fetcher = fetch) {
           AND EXISTS(SELECT 1 FROM facebook_sync_lock WHERE id=1 AND owner=? AND expires_at>?)`)
           .bind(new Date().toISOString(), post.id, owner, Date.now()).run();
         stats.unchanged += check.meta.changes;
+        continue;
+      }
+      if (old && old.title === post.title && old.body === post.body && old.published_at === post.date &&
+          old.permalink === post.permalink && old.active === post.active) {
+        // A renewed signed CDN URL must be saved, without rewriting editorial fields.
+        const write = await db.prepare(`UPDATE facebook_posts SET image_url=?,checked_at=? WHERE facebook_id=?
+          AND EXISTS(SELECT 1 FROM facebook_sync_lock WHERE id=1 AND owner=? AND expires_at>?)`)
+          .bind(imageUrl, new Date().toISOString(), post.id, owner, Date.now()).run();
+        imported += write.meta.changes;
+        stats.updated += write.meta.changes;
         continue;
       }
       const write = await db.prepare(UPSERT).bind(post.id, PAGE_ID, post.title, post.body, post.date,

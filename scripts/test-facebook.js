@@ -240,7 +240,7 @@ await assert.rejects(() => syncFacebook({ ...env, RCC_FACEBOOK_DB: brokenDb }, f
 assert.equal(sql.prepare('SELECT count(*) n FROM facebook_posts').get().n, beforeFailure);
 assert.equal(sql.prepare('SELECT count(*) n FROM facebook_sync_lock').get().n, 0);
 const writeFailure = { prepare(query) {
-  if (query.startsWith('INSERT INTO facebook_posts')) throw new Error('private write failure');
+  if (query.startsWith('INSERT INTO facebook_posts') || query.startsWith('UPDATE facebook_posts SET image_url=')) throw new Error('private write failure');
   return env.RCC_FACEBOOK_DB.prepare(query);
 } };
 await assert.rejects(() => syncFacebook({ ...env, RCC_FACEBOOK_DB: writeFailure }, fetcher),
@@ -263,28 +263,44 @@ for (const field of ['received', 'matching', 'rejected', 'examined', 'pages', 'r
 assert.equal(successLog.processed, successLog.created + successLog.updated);
 assert(!successLogs.join('').includes(env.RCC_FACEBOOK_PAGE_TOKEN));
 assert(!successLogs.join('').includes('https://'));
-// Bounded Free-plan batches must eventually drain, not forever reimport the first 15.
+// Exactly one unfiltered recent window, even when Meta advertises another page.
 sql.exec('DELETE FROM facebook_posts');
-const backlog = Array.from({ length: 75 }, (_, i) => ({ ...post, id: `${PAGE_ID}_${1000 + i}` }));
-for (let pass = 0; pass < 5; pass++) {
+const recent = Array.from({length:10}, (_,i) => ({...post,id:`${PAGE_ID}_${1000+i}`,
+  created_time:new Date(Date.parse(post.created_time)-i*60000).toISOString(),
+  message:i===9?'Dernière sélectionnée #ACTURCC':'Sans marqueur'}));
+for (let pass = 0; pass < 2; pass++) {
   queryCount = 0;
   let externalCount = 0;
   const result = await syncFacebook(env, async (url) => {
     externalCount++;
-    const page = Number(new URL(url).searchParams.get('after') || 0);
-    return Response.json({ data: backlog.slice(page * 25, (page + 1) * 25),
-      ...(page < 2 ? { paging: { next: 'ignored-not-followed', cursors: { after: String(page + 1) } } } : {}) });
+    const parsedUrl = new URL(url);
+    assert.equal(parsedUrl.searchParams.get('limit'),'10');
+    assert(!parsedUrl.searchParams.has('after'));
+    return Response.json({data:recent,paging:{next:'must-not-fetch',cursors:{after:'ignored'}}});
   });
-  assert.equal(result.processed, 15);
-  assert.equal(result.received, 75);
-  assert.equal(result.examined, 75);
-  assert.equal(result.matching, 75);
-  assert.equal(result.pages, 3);
-  assert.equal(result.created, 15);
+  assert.equal(result.received, 10);
+  assert.equal(result.examined, 10);
+  assert.equal(result.matching, 1);
+  assert.equal(result.pages, 1);
+  assert.equal(result.created, pass===0?1:0);
   assert.equal(result.updated, 0);
+  assert.equal(externalCount,1);
   assert(queryCount + externalCount < 50, 'Bound D1 and network subrequests for Workers Free');
-  assert.equal(sql.prepare('SELECT count(*) n FROM facebook_posts').get().n, (pass + 1) * 15);
+  assert.equal(sql.prepare('SELECT count(*) n FROM facebook_posts').get().n,1);
 }
+// An imported post outside the recent ten is retained, rechecked and updated by ID.
+let oldCalls=0;
+const oldId=recent[9].id;
+const outside = await syncFacebook(env,async url=>{
+  const u=new URL(url);
+  if(u.pathname.endsWith('/posts')) return Response.json({data:recent.slice(0,9)});
+  oldCalls++;assert(u.pathname.endsWith(oldId));
+  return Response.json({...recent[9],message:'Texte réellement modifié #ActuRCC',full_picture:'https://scontent.fbcdn.net/photo.jpg?oe=new'});
+});
+assert.equal(oldCalls,1);assert.equal(outside.rechecked,1);assert.equal(outside.updated,1);
+assert.equal(outside.examined,10);assert.equal(outside.received,9);
+assert.equal(sql.prepare('SELECT count(*) n FROM facebook_posts').get().n,1);
+assert.equal(sql.prepare('SELECT body FROM facebook_posts').get().body,'Texte réellement modifié');
 assert.equal(await readFile(new URL('../data/news.json', import.meta.url), 'utf8'), manualNews);
 sql.close();
 console.log('Facebook sans R2 : migration additive, hashtag, SQLite idempotence/concurrence, images absentes/expirées/renouvelées, token, API, repli manuel et XSS : OK. Aucun appel distant ni push.');
