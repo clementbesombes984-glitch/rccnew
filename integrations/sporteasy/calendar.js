@@ -17,13 +17,18 @@ export function publicText(value, limit = 240) {
       /\b(?:joueurs?|participants?|convoqu[eé]s?|pr[eé]sen(?:ce|t[se]?)s?|absen(?:ce|t[se]?)s?|bless(?:ures?|[eé]s?)|m[eé]dical|t[eé]l[eé]phone|covoiturage|contact|priv[eé]e?s?)\b/i.test(s)) return '';
   return s;
 }
-const epoch = (time, component) => {
+// Invocation-local cache: no persisted clock/rotation state or cross-category data.
+const epoch = (time, component, formatters = new Map()) => {
   if (time.isDate) return Date.UTC(time.year, time.month - 1, time.day);
   if (time.zone?.tzid !== 'floating') return time.toUnixTime() * 1000;
   const tz = component.getFirstProperty('dtstart')?.getParameter('tzid') || 'Europe/Paris';
   // Intl supplies current IANA rules if the feed omits VTIMEZONE. Floating SportEasy
   // times are explicitly interpreted in the club timezone, not the server's UTC.
-  const fmt = new Intl.DateTimeFormat('en-CA', { timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit', hourCycle: 'h23' });
+  let fmt = formatters.get(tz);
+  if (!fmt) {
+    fmt = new Intl.DateTimeFormat('en-CA', { timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit', hourCycle: 'h23' });
+    formatters.set(tz, fmt);
+  }
   const wall = Date.UTC(time.year, time.month - 1, time.day, time.hour, time.minute, time.second);
   const shown = utc => {
     const p = Object.fromEntries(fmt.formatToParts(utc).map(p => [p.type, p.value]));
@@ -41,8 +46,13 @@ export async function digest(value) {
   return Array.from(new Uint8Array(bytes), b => b.toString(16).padStart(2, '0')).join('');
 }
 export async function parseCalendar(ics, category, now = Date.now(), options = {}) {
+  const formatters = new Map();
+  const toEpoch = (time, component) => epoch(time, component, formatters);
+  const profile = options.profile;
+  const mark = Date.now();
   if (!CATEGORIES.includes(category) || typeof ics !== 'string' || ics.length > 2000000 || !ics.trimEnd().endsWith('END:VCALENDAR')) throw new Error('invalid_calendar');
   const root = new ICAL.Component(ICAL.parse(ics));
+  if (profile) profile.icalParseWallMs = Date.now() - mark;
   if (root.name !== 'vcalendar') throw new Error('invalid_calendar');
   const components = root.getAllSubcomponents('vevent');
   if (!components.length || components.length > 2000) throw new Error('empty_or_large_calendar');
@@ -51,7 +61,7 @@ export async function parseCalendar(ics, category, now = Date.now(), options = {
   const horizon = now + 30 * 86400000;
   const tracked = options.tracked || new Set();
   const processedHashes = [], withdrawnHashes = [];
-  const records = [], hashes = new Map();
+  const records = [];
   let iterations = 0, withheld = 0, cancelled = 0;
   // Resolve duplicate revisions deterministically before expansion, preserving exceptions.
   const revisions = new Map();
@@ -88,29 +98,28 @@ export async function parseCalendar(ics, category, now = Date.now(), options = {
     const event = new ICAL.Event(c, { exceptions });
     const recurring = event.isRecurring();
     if (priority && !recurring && !follow &&
-        (epoch(event.endDate, c) < now || epoch(event.startDate, c) > horizon)) continue;
+        (toEpoch(event.endDate, c) < now || toEpoch(event.startDate, c) > horizon)) continue;
     processedHashes.push(uidHash);
-    hashes.set(uid, Promise.resolve(uidHash));
     const iterator = recurring ? event.iterator() : null;
     let occurrence = recurring ? iterator.next() : event.startDate;
     while (occurrence) {
       if (++iterations > 10000 || records.length >= 2000) throw new Error('expansion_limit');
       const details = recurring ? event.getOccurrenceDetails(occurrence) : { item: event, startDate: event.startDate, endDate: event.endDate };
-      const item = details.item, start = epoch(details.startDate, item.component), end = epoch(details.endDate, item.component);
+      const item = details.item, start = toEpoch(details.startDate, item.component), end = toEpoch(details.endDate, item.component);
       if (!Number.isFinite(start) || !Number.isFinite(end) || end < start) throw new Error('invalid_event_time');
       const recurrenceUpper = priority && !follow ? horizon : upper;
-      if (recurring && epoch(occurrence, c) > recurrenceUpper) break;
+      const occurrenceTime = recurring ? toEpoch(occurrence, c) : start;
+      if (recurring && occurrenceTime > recurrenceUpper) break;
       if (item.component.getFirstPropertyValue('status') === 'CANCELLED') cancelled++;
       else if (!recurring || (end >= (priority && !follow ? now : lower) && start <= recurrenceUpper) ||
-          (priority && epoch(occurrence, c) >= now && epoch(occurrence, c) <= horizon)) {
+          (priority && occurrenceTime >= now && occurrenceTime <= horizon)) {
         const title = publicText(item.summary);
         const privacy = item.component.getFirstPropertyValue('class');
         if (!title || privacy === 'PRIVATE' || privacy === 'CONFIDENTIAL') {
           withheld++; withdrawnHashes.push(uidHash);
         }
         else {
-          if (!hashes.has(uid)) hashes.set(uid, digest(uid));
-          records.push({ uidHash: hashes.get(uid), title, start: new Date(start).toISOString(), end: new Date(end).toISOString(),
+          records.push({ uidHash, title, start: new Date(start).toISOString(), end: new Date(end).toISOString(),
             allDay: details.startDate.isDate, location: publicText(item.location), categories: [category],
             type: eventType(`${item.summary} ${item.component.getAllProperties('categories').flatMap(p => p.getValues()).join(' ')}`),
             description: '', notification: false, source: 'sporteasy' });
@@ -123,16 +132,29 @@ export async function parseCalendar(ics, category, now = Date.now(), options = {
   // Master/exception membership was validated once above, without quadratic scans.
   const unique = new Map();
   for (const r of records) {
-    const hash = await r.uidHash;
+    const hash = r.uidHash;
     const { uidHash, ...event } = r;
     const id = `se-${hash}-${event.start}`;
     unique.set(id, { id, ...event });
+  }
+  if (profile) {
+    profile.parseAndExpandWallMs = Date.now() - mark;
+    profile.occurrences = iterations;
+    profile.uidDigests = masters.size;
+    profile.timezoneFormatters = formatters.size;
   }
   return { events: [...unique.values()], rawCount: components.length, withheld, cancelled,
     processedHashes, withdrawnHashes };
 }
 
 const eventHash = event => /^se-([a-f0-9]{64})-/.exec(event.id)?.[1];
+// Explicit public schema comparison avoids two JSON serializations per event.
+// Includes every persisted public event field; property order is irrelevant.
+export function sameCalendarEvent(a, b) {
+  return ['id','title','start','end','allDay','location','type','description','notification','source'].every(key => a[key] === b[key]) &&
+    Array.isArray(a.categories) && Array.isArray(b.categories) && a.categories.length === b.categories.length &&
+    a.categories.every((category, index) => category === b.categories[index]);
+}
 export function reconcileCalendar(oldEvents, parsed, now, mode, tracked = new Set()) {
   const processed = new Set(parsed.processedHashes), withdrawn = new Set(parsed.withdrawnHashes);
   const incoming = new Map(parsed.events.map(event => [event.id, event]));
@@ -151,7 +173,7 @@ export function reconcileCalendar(oldEvents, parsed, now, mode, tracked = new Se
   const previous = new Map(oldEvents.map(event => [event.id, event]));
   for (const [id, event] of merged) {
     if (!previous.has(id)) created++;
-    else if (JSON.stringify(previous.get(id)) !== JSON.stringify(event)) updated++;
+    else if (!sameCalendarEvent(previous.get(id), event)) updated++;
   }
   for (const id of previous.keys()) if (!merged.has(id)) removed++;
   return { events: [...merged.values()], created, updated, removed };
@@ -167,6 +189,40 @@ export function feedConfig(secret, categories = CATEGORIES) {
   }
   return feeds;
 }
+// Cancel the timeout after the body has been consumed, including all error paths.
+// AbortSignal.timeout cannot be cleared and formerly survived successful requests.
+export async function downloadCalendar(url, fetcher = fetch, timers = globalThis) {
+  const controller = new AbortController();
+  const timeout = timers.setTimeout(() => controller.abort(), 20000);
+  const profile = {};
+  const start = Date.now();
+  let reader;
+  try {
+    const response = await fetcher(url, { redirect: 'manual', signal: controller.signal, headers: { Accept: 'text/calendar' } });
+    profile.headersWallMs = Date.now() - start;
+    // Presence only: never log/cache header values, which may contain private data.
+    profile.httpStatus = response.status;
+    profile.etagPresent = response.headers.has('etag');
+    profile.lastModifiedPresent = response.headers.has('last-modified');
+    if (!response.ok) { await response.body?.cancel(); throw new Error('feed_http'); }
+    reader = response.body.getReader(); let size = 0;
+    const decoder = new TextDecoder(); const chunks = [];
+    const bodyStart = Date.now();
+    while (true) {
+      const {value, done} = await reader.read(); if (done) break;
+      size += value.length;
+      if (size > 2000000) { await reader.cancel(); throw new Error('feed_size'); }
+      chunks.push(decoder.decode(value, {stream:true}));
+    }
+    chunks.push(decoder.decode());
+    profile.bodyAndDecodeWallMs = Date.now() - bodyStart;
+    profile.bytes = size;
+    return {body:chunks.join(''), profile};
+  } finally {
+    timers.clearTimeout(timeout);
+    reader?.releaseLock();
+  }
+}
 export async function syncCalendars(env, fetcher = fetch, now = Date.now(), options = {}) {
   if (env.RCC_SPORTEASY_SYNC_ENABLED !== 'true') return { status: 'disabled' };
   if (!env.RCC_SPORTEASY_KV) throw new Error('storage_missing');
@@ -177,22 +233,16 @@ export async function syncCalendars(env, fetcher = fetch, now = Date.now(), opti
   // Sequential categories keep peak memory and concurrent outgoing connections bounded.
   for (const category of categories) {
     try {
-      const response = await fetcher(feeds[category], { redirect: 'manual', signal: AbortSignal.timeout(20000), headers: { Accept: 'text/calendar' } });
-      if (!response.ok) { await response.body?.cancel(); throw new Error('feed_http'); }
-      const reader = response.body.getReader(); let size = 0; const chunks = [];
-      while (true) {
-        const { value, done } = await reader.read(); if (done) break;
-        size += value.length;
-        if (size > 2000000) { await reader.cancel(); throw new Error('feed_size'); }
-        chunks.push(value);
-      }
-      const body = new TextDecoder().decode(await new Blob(chunks).arrayBuffer());
+      const {body, profile} = await downloadCalendar(feeds[category], fetcher);
+      let mark = Date.now();
       const hash = await digest(body);
+      profile.digestWallMs = Date.now() - mark;
       const key = `calendar:${category}`;
       // Read small metadata first: unchanged feeds need no JSON decoding of all events.
       // Older snapshots (and KV adapters without metadata) keep the original safe path.
       let old, legacyValue;
       let metadataHit = false;
+      mark = Date.now();
       if (typeof env.RCC_SPORTEASY_KV.getWithMetadata === 'function') {
         const cached = await env.RCC_SPORTEASY_KV.getWithMetadata(key, 'stream');
         old = cached.metadata;
@@ -202,6 +252,7 @@ export async function syncCalendars(env, fetcher = fetch, now = Date.now(), opti
           old = JSON.parse(legacyValue);
         } else await cached.value?.cancel?.();
       } else old = await env.RCC_SPORTEASY_KV.get(key, 'json');
+      profile.metadataReadWallMs = Date.now() - mark;
       const day = new Date(now).toISOString().slice(0, 10);
       const mode = !options.mode ? 'legacy' : options.mode === 'full' || !old?.fullDay ? 'full' : 'priority';
       if (mode !== 'full' && old?.formatVersion === 1 && old.hash === hash && old.expandedDay === day) {
@@ -212,24 +263,42 @@ export async function syncCalendars(env, fetcher = fetch, now = Date.now(), opti
         await env.RCC_SPORTEASY_KV.put(`checked:${category}`, JSON.stringify({ checkedAt: new Date(now).toISOString() }));
         results.push({ category, status: 'unchanged', events: old.eventCount ?? old.events.length, raw: old.rawCount,
           metadataHit, metadataUpgraded: Boolean(legacyValue), parsed: false, mode,
-          created: 0, updated: 0, removed: 0, snapshotWrites: legacyValue ? 1 : 0, checkWrites: 1 });
+          created: 0, updated: 0, removed: 0, snapshotWrites: legacyValue ? 1 : 0, checkWrites: 1, profile });
         continue;
       }
       const snapshot = mode === 'legacy' ? null : Array.isArray(old?.events) ? old : await env.RCC_SPORTEASY_KV.get(key, 'json');
       const oldEvents = snapshot?.events || [];
       const tracked = new Set(oldEvents.filter(event => Date.parse(event.end) >= now && Date.parse(event.start) <= now + 30 * 86400000).map(eventHash));
-      const parsed = await parseCalendar(body, category, now, { mode, tracked });
+      const parsed = await parseCalendar(body, category, now, { mode, tracked, profile });
+      mark = Date.now();
       const changes = mode === 'legacy' ? { events: parsed.events, created: 0, updated: 0, removed: 0 } : reconcileCalendar(oldEvents, parsed, now, mode, tracked);
+      profile.compareWallMs = Date.now() - mark;
       const fullDay = mode === 'full' ? day : old?.fullDay;
-      await env.RCC_SPORTEASY_KV.put(key, JSON.stringify({ events: changes.events, rawCount: parsed.rawCount,
+      // Only byte-independent metadata changes (hash/day/counts) require a new
+      // snapshot when the public events are equal. Daily window changes still write.
+      const identical = mode !== 'legacy' && changes.created === 0 && changes.updated === 0 && changes.removed === 0 &&
+        snapshot?.hash === hash && snapshot.expandedDay === day && snapshot.fullDay === fullDay &&
+        snapshot.rawCount === parsed.rawCount && snapshot.withheld === parsed.withheld && snapshot.cancelled === parsed.cancelled;
+      if (identical) {
+        await env.RCC_SPORTEASY_KV.put(`checked:${category}`, JSON.stringify({checkedAt:new Date(now).toISOString()}));
+        results.push({category,status:'unchanged',mode,events:changes.events.length,raw:parsed.rawCount,
+          metadataHit,metadataUpgraded:false,parsed:true,created:0,updated:0,removed:0,snapshotWrites:0,checkWrites:1,profile});
+        continue;
+      }
+      mark = Date.now();
+      const serialized = JSON.stringify({ events: changes.events, rawCount: parsed.rawCount,
         withheld: parsed.withheld, cancelled: parsed.cancelled, formatVersion: 1, hash,
-        expandedDay: day, ...(fullDay ? { fullDay } : {}), syncedAt: new Date(now).toISOString() }), {
+        expandedDay: day, ...(fullDay ? { fullDay } : {}), syncedAt: new Date(now).toISOString() });
+      profile.serializeWallMs = Date.now() - mark;
+      mark = Date.now();
+      await env.RCC_SPORTEASY_KV.put(key, serialized, {
         metadata: { formatVersion: 1, hash, expandedDay: day, eventCount: changes.events.length, rawCount: parsed.rawCount,
           ...(fullDay ? { fullDay } : {}) }
       });
+      profile.snapshotWriteWallMs = Date.now() - mark;
       results.push({ category, status: 'ok', events: changes.events.length, raw: parsed.rawCount, withheld: parsed.withheld, cancelled: parsed.cancelled,
         metadataHit, metadataUpgraded: false, parsed: true, mode,
-        created: changes.created, updated: changes.updated, removed: changes.removed, snapshotWrites: 1, checkWrites: 0 });
+        created: changes.created, updated: changes.updated, removed: changes.removed, snapshotWrites: 1, checkWrites: 0, profile });
     } catch {
       // Deliberately no exception message, URL, ICS or personal fields in logs.
       results.push({ category, status: 'retained_last_valid' });

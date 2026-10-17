@@ -21,17 +21,21 @@ export class SportEasyCoordinator {
       const {slot, category, day} = selection;
       const started = Date.now();
       try {
+        let mark = Date.now();
         const checkpoint = await this.ctx.storage.get('checkpoint');
+        const coordination = {checkpointReadWallMs:Date.now()-mark};
         if (checkpoint && checkpoint.category !== category) return Response.json({status:'category_mismatch'}, {status:409});
         if (checkpoint && slot <= checkpoint.lastSlot) return Response.json({status:'duplicate_or_old', category, slot});
         // First successful visit each UTC day performs a full pass. A missed daily
         // slot is caught up on the next visit, without a second Cron or extra fetch.
         const mode = checkpoint?.lastFullDay === day ? 'priority' : 'full';
         const result = await this.sync(this.env, fetch, scheduledTime, {category, mode});
+        mark = Date.now();
         if (result.status === 'ok') await this.ctx.storage.put('checkpoint', {
           category, lastSlot:slot, lastFullDay:mode === 'full' ? day : checkpoint.lastFullDay
         });
-        const summary = {component:'category-sync', category, slot, mode, ...result, durationMs:Date.now()-started};
+        coordination.checkpointWriteWallMs = Date.now()-mark;
+        const summary = {component:'category-sync', category, slot, mode, ...result, coordination, durationMs:Date.now()-started};
         console.log(JSON.stringify(summary));
         return Response.json(summary);
       } catch {
